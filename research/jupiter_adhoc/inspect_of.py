@@ -1,0 +1,10 @@
+import numpy as np
+d1=np.load('/home/jupiter/Lvl3Quant/data/processed/orderflow_features/20250714_orderflow.npz')
+print('OF1/OF2:',list(d1.files))
+for k in d1.files: print(' ',k,d1[k].shape,d1[k].dtype)
+d3=np.load('/home/jupiter/Lvl3Quant/data/processed/of3_large_order/20250714.mbo.dbn_of3.npz')
+print('OF3:',list(d3.files))
+for k in d3.files: print(' ',k,d3[k].shape,d3[k].dtype)
+d4=np.load('/home/jupiter/Lvl3Quant/data/processed/of4_dom_depth/20250714_of4.npz')
+print('OF4:',list(d4.files))
+for k in d4.files: print(' ',k,d4[k].shape,d4[k].dtype)

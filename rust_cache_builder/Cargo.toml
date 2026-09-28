@@ -1,0 +1,67 @@
+[package]
+name = "lob_cache_builder"
+version = "0.1.0"
+edition = "2021"
+description = "High-performance Rust port of Lvl3Quant snapshot cache builder"
+
+[[bin]]
+name = "lob_cache_builder"
+path = "src/main.rs"
+
+[dependencies]
+# Databento DBN file reading (v0.22 has the DynDecoder API we need)
+dbn = "0.22"
+
+# Parallelism
+rayon = "1.10"
+
+# Date/time handling (for manifest timestamps)
+chrono = { version = "0.4", features = ["std"] }
+
+# CLI argument parsing
+clap = { version = "4", features = ["derive"] }
+
+# Error handling
+anyhow = "1"
+
+# Progress bars
+indicatif = "0.17"
+
+# Float ordering for BTreeMap
+ordered-float = "4"
+
+# Logging
+log = "0.4"
+env_logger = "0.11"
+
+# JSON for manifest output
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+# ZIP for NPZ output
+zip = "2.2"
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+panic = "abort"
+
+[profile.dev]
+opt-level = 1  # Slightly faster debug builds
+
+[[bin]]
+name = "debug_ingest"
+path = "src/debug_ingest.rs"
+
+[[bin]]
+name = "mbo_feature_expander"
+path = "src/feature_expander_main.rs"
+
+[[bin]]
+name = "debug_expander"
+path = "src/debug_expander.rs"
+
+[[bin]]
+name = "fill_sim_cli"
+path = "src/fill_sim_main.rs"

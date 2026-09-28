@@ -1,0 +1,107 @@
+# Static Fallback Rules — HC #368
+#
+# WHEN: paper trader's ML stack fails (model load err, inference timeout > N seconds,
+#       NPZ feed stalled, σ-spike, or any safety-net trip).
+# THEN: switch to this rule-set so trades don't stop.
+#
+# Rules are evaluated in order. First matching rule fires. If no rule matches, no trade.
+# All rules SHORT-only per HC #354 current evidence + HC #363 short-side > long-side.
+
+mode: static_fallback
+schema_version: "1.0"
+authorized_by: HC #368
+
+# When to engage:
+trigger:
+  any_of:
+    - model_load_failed
+    - inference_timeout_seconds_exceeded
+    - mbo_feed_stalled_seconds_exceeded
+    - sigma_spike_halt
+    - prediction_buffer_empty_for_n_seconds: 30
+    - explicit_user_command: "/static_fallback"
+
+# When to disengage (return to ML):
+recovery:
+  all_of:
+    - ml_stack_healthy_seconds: 60
+    - n_consecutive_healthy_preds: 20
+    - no_safety_net_trip_for_minutes: 5
+
+# Rule set (evaluated top-down, first match wins):
+rules:
+  - name: "rth_high_vol_short_break"
+    description: "Trending-down session with elevated vol: aggressive short on bid-side absorption"
+    when:
+      - time_of_day_between: ["10:00", "15:30"]
+      - rolling_30s_vol_ticks_gt: 4.0
+      - last_5s_net_volume_signed_lt: -200    # sellers dominant
+      - bid_size_at_touch_gt: 50               # support to fade into
+      - last_3_trades_at_bid_pct_gt: 0.7
+    action:
+      side: short
+      order_type: passive_limit
+      offset_ticks: 0
+      size_contracts: 1
+      mfe_target_ticks: 2.0
+      mae_stop_ticks: -2.5
+      time_exit_seconds: 5
+      max_trades_per_minute: 1
+
+  - name: "midday_mean_revert_short_reject"
+    description: "Midday rejection at session high — fade up-thrust"
+    when:
+      - time_of_day_between: ["11:30", "14:00"]
+      - rolling_5min_high_within_ticks: 1     # at or near 5min high
+      - rolling_30s_vol_ticks_lt: 3.0
+      - ask_size_at_touch_gt: 80               # heavy offer
+      - bid_book_depletion_pct_lt: 0.3         # bids holding firm below
+    action:
+      side: short
+      order_type: passive_limit
+      offset_ticks: 1
+      size_contracts: 1
+      mfe_target_ticks: 1.5
+      mae_stop_ticks: -2.0
+      time_exit_seconds: 10
+      max_trades_per_minute: 1
+
+  - name: "afternoon_trend_short_continuation"
+    description: "Established afternoon downtrend continuation"
+    when:
+      - time_of_day_between: ["14:00", "15:30"]
+      - rolling_5min_return_ticks_lt: -3
+      - rolling_30s_vol_ticks_gt: 2.5
+      - last_1min_net_volume_signed_lt: -500
+    action:
+      side: short
+      order_type: passive_limit
+      offset_ticks: 0
+      size_contracts: 1
+      mfe_target_ticks: 2.0
+      mae_stop_ticks: -2.5
+      time_exit_seconds: 8
+      max_trades_per_minute: 1
+
+# Hard blocks — never trade if ANY of these are true:
+hard_blocks:
+  - time_of_day_between: ["09:30", "09:45"]   # open volatility — too risky for static
+  - time_of_day_between: ["15:55", "16:00"]   # close — exit-only mode
+  - within_seconds_of_news_release: 60
+  - daily_realized_loss_ticks_lt: -30          # circuit breaker (less aggressive than ML's -50)
+  - consecutive_static_losses: 3               # static mode is dumb — stop after 3 losses
+
+# Logging:
+logging:
+  log_each_rule_evaluation: false   # too verbose; only log fires
+  log_each_fire: true
+  discord_alert_on_engage: true     # critical signal that ML failed
+  discord_alert_on_disengage: true
+  attribution_format: "STATIC_FALLBACK | rule={name} | side=short | net_ticks={net}"
+
+# Sanity caps (override anything in rules):
+sanity_caps:
+  max_trades_per_day: 10            # static = dumb = small allowance
+  max_position_contracts: 1
+  per_trade_stop_loss_ticks: 3
+  intraday_circuit_breaker_ticks: -30

@@ -1,0 +1,166 @@
+{
+  "run_date": "2026-08-26T23:25:44.877111",
+  "period": "2019-01-02 to 2026-08-22",
+  "capital": 100000.0,
+  "cost_bps": 10,
+  "results": {
+    "SPY B&H": {
+      "CAGR": 17.5,
+      "Sharpe": 0.73,
+      "Sortino": 0.69,
+      "MaxDD": -33.7,
+      "PF": 1.2,
+      "WR": 55.5,
+      "Total_Return": 242.1,
+      "Years": 7.6
+    },
+    "A: TQQQ + Cash": {
+      "CAGR": 32.8,
+      "Sharpe": 0.74,
+      "Sortino": 0.7,
+      "MaxDD": -60.9,
+      "PF": 1.16,
+      "WR": 53.0,
+      "Total_Return": 769.3,
+      "Years": 7.6
+    },
+    "A: TQQQ + TLT": {
+      "CAGR": 28.8,
+      "Sharpe": 0.68,
+      "Sortino": 0.63,
+      "MaxDD": -69.5,
+      "PF": 1.14,
+      "WR": 53.9,
+      "Total_Return": 589.5,
+      "Years": 7.6
+    },
+    "A: UPRO + Cash": {
+      "CAGR": 25.1,
+      "Sharpe": 0.69,
+      "Sortino": 0.65,
+      "MaxDD": -53.6,
+      "PF": 1.16,
+      "WR": 51.8,
+      "Total_Return": 451.8,
+      "Years": 7.6
+    },
+    "A: UPRO + TLT": {
+      "CAGR": 21.3,
+      "Sharpe": 0.6,
+      "Sortino": 0.56,
+      "MaxDD": -63.4,
+      "PF": 1.13,
+      "WR": 52.7,
+      "Total_Return": 337.7,
+      "Years": 7.6
+    },
+    "B: 20d hold, 3% gap": {
+      "CAGR": 30.3,
+      "Sharpe": 1.03,
+      "Sortino": 1.03,
+      "MaxDD": -39.8,
+      "PF": 1.26,
+      "WR": 54.0,
+      "Total_Return": 653.2,
+      "Years": 7.6,
+      "Trades": 412.0,
+      "WR_trades": 64.1
+    },
+    "B: 40d hold, 3% gap": {
+      "CAGR": 30.9,
+      "Sharpe": 1.01,
+      "Sortino": 0.97,
+      "MaxDD": -40.9,
+      "PF": 1.25,
+      "WR": 54.9,
+      "Total_Return": 679.9,
+      "Years": 7.6,
+      "Trades": 226.0,
+      "WR_trades": 65.9
+    },
+    "B: 60d hold, 3% gap": {
+      "CAGR": 27.0,
+      "Sharpe": 0.97,
+      "Sortino": 0.96,
+      "MaxDD": -33.6,
+      "PF": 1.23,
+      "WR": 53.7,
+      "Total_Return": 518.2,
+      "Years": 7.6,
+      "Trades": 154.0,
+      "WR_trades": 66.2
+    },
+    "B: 20d hold, 5% gap": {
+      "CAGR": 31.0,
+      "Sharpe": 1.1,
+      "Sortino": 1.13,
+      "MaxDD": -31.5,
+      "PF": 1.28,
+      "WR": 52.0,
+      "Total_Return": 683.8,
+      "Years": 7.6,
+      "Trades": 333.0,
+      "WR_trades": 62.5
+    },
+    "B: 40d hold, 5% gap": {
+      "CAGR": 27.1,
+      "Sharpe": 0.93,
+      "Sortino": 0.94,
+      "MaxDD": -40.8,
+      "PF": 1.23,
+      "WR": 53.2,
+      "Total_Return": 524.1,
+      "Years": 7.6,
+      "Trades": 206.0,
+      "WR_trades": 62.6
+    },
+    "C: VIX 18-30, 10% stop": {
+      "CAGR": 9.4,
+      "Sharpe": 0.33,
+      "Sortino": 0.34,
+      "MaxDD": -45.3,
+      "PF": 1.13,
+      "WR": 32.2,
+      "Total_Return": 98.0,
+      "Years": 7.6,
+      "Trades": 26.0,
+      "WR_trades": 46.2
+    },
+    "C: VIX 20-35, 15% stop": {
+      "CAGR": 7.7,
+      "Sharpe": 0.27,
+      "Sortino": 0.3,
+      "MaxDD": -30.3,
+      "PF": 1.14,
+      "WR": 23.4,
+      "Total_Return": 76.5,
+      "Years": 7.6,
+      "Trades": 13.0,
+      "WR_trades": 53.8
+    },
+    "C: VIX 16-28, 8% stop": {
+      "CAGR": 8.9,
+      "Sharpe": 0.31,
+      "Sortino": 0.3,
+      "MaxDD": -45.4,
+      "PF": 1.1,
+      "WR": 40.8,
+      "Total_Return": 91.0,
+      "Years": 7.6,
+      "Trades": 33.0,
+      "WR_trades": 30.3
+    },
+    "C: VIX 20-30, 12% stop": {
+      "CAGR": 3.6,
+      "Sharpe": 0.09,
+      "Sortino": 0.1,
+      "MaxDD": -39.5,
+      "PF": 1.09,
+      "WR": 21.0,
+      "Total_Return": 31.3,
+      "Years": 7.6,
+      "Trades": 22.0,
+      "WR_trades": 40.9
+    }
+  }
+}

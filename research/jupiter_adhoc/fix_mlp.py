@@ -1,0 +1,6 @@
+content=open("/home/jupiter/Lvl3Quant/alpha_discovery/deep_models/train_fusion_mlp.py").read()
+content=content.replace("print("fold %d: no train data, skip" % fold)","print("fold", fold, ": no train data, skip")")
+content=content.replace("%d: train=%d val=%d","fold train val")
+content=content.replace("  ep%d val_loss=%","  ep_loss_")
+open("/home/jupiter/Lvl3Quant/alpha_discovery/deep_models/train_fusion_mlp.py","w").write(content)
+print("done")

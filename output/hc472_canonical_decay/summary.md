@@ -1,0 +1,31 @@
+# HC #472 — Canonical FIFO Decay Diagnostic
+
+Source: `surviving_canonical_fifo_fills.parquet` (n=20939 fills, days=15)
+
+Median split date: `20260304` (first half < this, second ≥)
+
+## Headline (all configs, all fills)
+
+- n_fills=20939, n_days=15, sum_ticks=-7891.1, mean_ticks=-0.377, WR=0.430
+- Sharpe per-trade=-0.10918070908473546, Sharpe daily=-0.657769559610161, Sortino daily=-0.6409262511984783, PF=0.8036612122198322
+- long_share=0.0016  (99.84% short)
+
+## Per-config first-half vs second-half (HC #472 R2)
+
+| config | all_n | all_mean | all_sharpe_d | fh_mean | sh_mean | fh_wr | sh_wr | long_sum | short_sum |
+|---|---|---|---|---|---|---|---|---|---|
+| pair01_logret1s+pup5s | 9635 | -0.392 | -0.910530265430997 | -0.36632315340909083 | -0.4285855608293778 | 0.4307528409090909 | 0.42218336247814137 | nan | -3778.759999999999 |
+| pair07_logret10s+logret60sq50 | 1254 | -0.585 | -0.6601742033854885 | -0.41529121725731877 | -0.7660826446280992 | 0.42989214175654855 | 0.37355371900826445 | -9.783999999999995 | -723.2199999999998 |
+| pair08_logret5s+pup5s | 5181 | -0.345 | -0.4581211344395372 | -0.3171185506104764 | -0.3724042392127175 | 0.4399369830641985 | 0.4299772899318698 | nan | -1789.0559999999991 |
+| trip01_pup5s+logret1s+logret10s | 66 | -0.694 | -0.41642123508000145 | -1.0080754716981128 | 0.5855384615384617 | 0.33962264150943394 | 0.5384615384615384 | nan | -45.81599999999999 |
+| trip03_logret5s+pup5s+logret1s | 4292 | -0.366 | -0.52545603006266 | -0.27560629921259827 | -0.4465752212389379 | 0.4453740157480315 | 0.4194690265486726 | nan | -1569.2919999999992 |
+| trip04_pup5s+pup10s+logret1s | 331 | -0.246 | -0.2180754324867632 | -0.38128169014084484 | 0.570808510638298 | 0.43309859154929575 | 0.574468085106383 | nan | -81.45599999999993 |
+| trip07_logret60s+logret30sq50+fifotp8sl5 | 58 | 0.607 | 0.41546304823260627 | 0.12400000000000007 | 0.9475294117647062 | 0.5 | 0.6176470588235294 | nan | 35.19200000000002 |
+| trip09_logret60s+logret10sq50+fifotp8sl5 | 61 | 0.526 | 0.32330793827765236 | -0.005629629629629585 | 0.9475294117647062 | 0.48148148148148145 | 0.6176470588235294 | nan | 32.06400000000001 |
+| trip10_logret60s+logret30sq50+fifotp8sl5_top10 | 61 | 0.640 | 0.41636885531042483 | 0.2536296296296297 | 0.9475294117647062 | 0.5185185185185185 | 0.6176470588235294 | nan | 39.06400000000002 |
+
+## Interpretation per HC #472 R2
+
+- If `fh_mean` and `sh_mean` differ by >2×, the full-window mean is REJECTED as a headline.
+- Long-side sum near zero confirms model defect (HC #475 R1).
+- Per-config configs whose `sh_sharpe_daily` is below acceptance fail HC #472 R2 retrain gate.

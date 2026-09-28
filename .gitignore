@@ -1,0 +1,117 @@
+# ---------------------------------------------------------------------------
+# Python
+# ---------------------------------------------------------------------------
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.eggs/
+build/
+dist/
+.venv/
+venv/
+env/
+.python-version
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.ipynb_checkpoints/
+.coverage
+htmlcov/
+
+# ---------------------------------------------------------------------------
+# Rust
+# ---------------------------------------------------------------------------
+target/
+**/*.rs.bk
+
+# ---------------------------------------------------------------------------
+# Market data (licensed / third-party — never commit)
+# Root-anchored so code packages named `data/` (e.g. wheel_strategy_v1/data/)
+# stay tracked.
+# ---------------------------------------------------------------------------
+/data/
+/mbo/
+/mbo_oot/
+**/data/cache/**
+!**/data/cache/**/
+!**/data/cache/**/*.py
+**/data/raw/
+**/data/processed/
+*.dbn
+*.dbn.zst
+*.zst
+*.npz
+*.npy
+*.parquet
+*.feather
+*.arrow
+*.h5
+*.hdf5
+*.csv
+*.csv.gz
+*.gz
+*.zip
+
+# ---------------------------------------------------------------------------
+# Models, checkpoints, experiment tracking
+# ---------------------------------------------------------------------------
+/models/
+/checkpoints/
+*.pt
+*.pth
+*.ckpt
+*.onnx
+*.safetensors
+*.pkl
+*.pickle
+*.joblib
+mlruns/
+mlartifacts/
+/mlflow/
+/mlflow_local/
+/mlflow_artifacts/
+
+# ---------------------------------------------------------------------------
+# Run outputs, logs, runtime state
+# ---------------------------------------------------------------------------
+/results/
+/research_results/
+/archives/
+/logs/
+**/logs/
+*.log
+nohup.out
+/state/
+/locks/
+*.pid
+*.db
+*.sqlite
+*.sqlite3
+*.tmp
+*.bak
+
+# ---------------------------------------------------------------------------
+# Secrets & credentials (code reads keys from environment variables)
+# ---------------------------------------------------------------------------
+.env
+.env.*
+*.env
+API_KEYS*
+*secret*
+*credential*
+*.pem
+*.key
+*.p12
+/secrets/
+/secure/
+
+# ---------------------------------------------------------------------------
+# OS / editor
+# ---------------------------------------------------------------------------
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*~

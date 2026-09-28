@@ -1,0 +1,902 @@
+#!/usr/bin/env python3
+"""
+Momentum Combos v5 — Combinatorial Strategy Tester
+====================================================
+Tests ALL combinations of profitable signal features discovered in v1-v4:
+
+Signal filters: momentum_2, momentum_3, agree_all3
+Z thresholds:   z2.5, z3.0, z5.0
+Exit types:     time_30s, bracket_wide (SL4/TP8/60s), bracket_balanced (SL3/TP4/30s)
+Time filters:   none (all day), midday (10:00-14:00 ET)
+
+= 3 x 3 x 3 x 2 = 54, minus z5.0+time_30s combos (too few trades) = ~45
+
+Data: CNN-Mamba v2 predictions, 5 OOT folds (Feb 23-27 2026)
+Fill sim: Rust fill_sim_cli with real MBO data
+
+Usage:
+    python momentum_combos_v5.py
+    python momentum_combos_v5.py --workers 8 --dry-run
+"""
+
+import sys
+import gc
+import json
+import time
+import argparse
+import subprocess
+import logging
+import os
+from pathlib import Path
+from datetime import datetime, timezone, timedelta
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from dataclasses import dataclass, field
+from typing import Optional, Dict, List, Tuple
+from collections import defaultdict
+
+import numpy as np
+
+# ── Paths ──────────────────────────────────────────────────────────────────
+LVL3_ROOT = Path(__file__).resolve().parent.parent
+BINARY = LVL3_ROOT / 'rust_cache_builder' / 'target' / 'release' / 'fill_sim_cli'
+MBO_DIR = LVL3_ROOT / 'data' / 'raw' / 'mbo'
+EVENT_DIR = LVL3_ROOT / 'data' / 'processed' / 'mbo_events_smart_v3'
+PRED_DIR = LVL3_ROOT / 'output' / 'cnn_mamba_v2_smart_v3_mar'
+RESULTS_DIR = LVL3_ROOT / 'execution' / 'results' / 'momentum_v5'
+PRED_CACHE_DIR = LVL3_ROOT / 'execution' / 'pred_cache' / 'momentum_v5'
+RESULTS_DIR.mkdir(parents=True, exist_ok=True)
+PRED_CACHE_DIR.mkdir(parents=True, exist_ok=True)
+
+# ── ES Futures Constants ──────────────────────────────────────────────────
+TICK_VALUE = 12.50
+POINT_VALUE = 50.00
+COMMISSION_RT = 4.70
+COMMISSION_TICKS = COMMISSION_RT / TICK_VALUE
+
+# ── Bar/Timing Constants ──
+BARS_PER_SEC = 10
+BAR_NS = 100_000_000  # 100ms
+RTH_HOURS = 6.5
+N_RTH_BARS = int(RTH_HOURS * 3600 * BARS_PER_SEC)  # 234000
+
+# ── Model Constants ──
+WINDOW = 1000
+STRIDE = 500
+
+# ── Fold Discovery ──
+FOLD_FILES = sorted(PRED_DIR.glob('fold_0*_oot_predictions.npz'))
+
+# ── Timestamp ──
+_ts = datetime.now().strftime('%Y%m%d_%H%M%S')
+
+# ── Logging ──
+_log_file = str(RESULTS_DIR / f'momentum_v5_{_ts}.log')
+log = logging.getLogger('momentum_v5')
+log.setLevel(logging.INFO)
+_fh = logging.FileHandler(_log_file, mode='w', encoding='utf-8')
+_fh.setFormatter(logging.Formatter('%(asctime)s %(levelname)s: %(message)s'))
+log.addHandler(_fh)
+_ch = logging.StreamHandler(sys.stdout)
+_ch.setFormatter(logging.Formatter('%(asctime)s %(levelname)s: %(message)s'))
+log.addHandler(_ch)
+if hasattr(sys.stdout, 'reconfigure'):
+    sys.stdout.reconfigure(encoding='utf-8', errors='replace')
+
+
+# ============================================================
+# RTH Timestamp Utilities
+# ============================================================
+
+def rth_start_ns_for_date(date_str: str) -> int:
+    """Compute RTH start timestamp (9:30 AM ET) for date YYYYMMDD."""
+    year, month, day = int(date_str[:4]), int(date_str[4:6]), int(date_str[6:8])
+    d = datetime(year, month, day)
+    dst_start_2025 = datetime(2025, 3, 9)
+    dst_end_2025 = datetime(2025, 11, 2)
+    dst_start_2026 = datetime(2026, 3, 8)
+    dst_end_2026 = datetime(2026, 11, 1)
+    if (dst_start_2025 <= d < dst_end_2025) or (dst_start_2026 <= d < dst_end_2026):
+        utc_offset = -4
+    else:
+        utc_offset = -5
+    rth_start_utc_hours = 9.5 - utc_offset
+    midnight_utc = datetime(year, month, day, tzinfo=timezone.utc)
+    rth_start = midnight_utc + timedelta(hours=rth_start_utc_hours)
+    return int(rth_start.timestamp() * 1e9)
+
+
+# ============================================================
+# Prediction Loading
+# ============================================================
+
+def load_fold(fold_path: Path) -> Optional[Dict]:
+    """Load a CNN-Mamba v2 fold prediction file."""
+    try:
+        data = np.load(str(fold_path), allow_pickle=True)
+        oot_path = str(data['oot_files'][0])
+        basename = oot_path.replace('\\', '/').split('/')[-1]
+        date_str = basename.split('_')[0]
+        return {
+            'predictions': data['predictions'].astype(np.float64),
+            'labels': data['labels'].astype(np.float64),
+            'date_str': date_str,
+            'n_samples': data['predictions'].shape[0],
+            'fold_path': str(fold_path),
+        }
+    except Exception as e:
+        log.warning(f"Failed to load {fold_path}: {e}")
+        return None
+
+
+def load_event_timestamps(date_str: str) -> Optional[np.ndarray]:
+    """Load event timestamps for a date."""
+    ev_file = EVENT_DIR / f'{date_str}_mbo_events.npz'
+    if not ev_file.exists():
+        return None
+    try:
+        ev_data = np.load(str(ev_file), allow_pickle=True)
+        ts = ev_data['timestamps']
+        del ev_data
+        return ts
+    except Exception as e:
+        log.warning(f"Failed to load events for {date_str}: {e}")
+        return None
+
+
+# ============================================================
+# Signal Generation Core
+# ============================================================
+
+def map_predictions_to_bars(
+    predictions: np.ndarray,
+    event_timestamps: np.ndarray,
+    date_str: str,
+) -> Tuple[np.ndarray, np.ndarray]:
+    """Map per-window predictions to bar indices. Returns (bar_indices, predictions_rth)."""
+    n_events = len(event_timestamps)
+    n_preds = len(predictions)
+
+    starts = np.arange(0, n_events - WINDOW + 1, STRIDE, dtype=np.int64)
+    label_idxs = starts + WINDOW - 1
+
+    if len(label_idxs) > n_preds:
+        label_idxs = label_idxs[:n_preds]
+    elif n_preds > len(label_idxs):
+        predictions = predictions[:len(label_idxs)]
+
+    if len(predictions) == 0:
+        return np.array([], dtype=np.int64), np.array([], dtype=np.float64)
+
+    pred_timestamps = event_timestamps[label_idxs]
+    rth_start = rth_start_ns_for_date(date_str)
+    bar_indices = ((pred_timestamps - rth_start) // BAR_NS).astype(np.int64)
+    rth_mask = (bar_indices >= 0) & (bar_indices < N_RTH_BARS)
+
+    return bar_indices[rth_mask], predictions[rth_mask]
+
+
+def expanding_zscore_bar_signal(
+    raw_preds: np.ndarray,
+    bar_indices: np.ndarray,
+    running_stats: Optional[Dict] = None,
+) -> Tuple[np.ndarray, Dict]:
+    """Apply expanding z-score to bar-level signal (no lookahead)."""
+    if running_stats is None:
+        running_stats = {'sum': 0.0, 'sq': 0.0, 'count': 0}
+
+    bar_preds = np.zeros(N_RTH_BARS, dtype=np.float64)
+    for bi, val in zip(bar_indices, raw_preds):
+        bar_preds[bi] = val
+
+    zscore = np.zeros(N_RTH_BARS, dtype=np.float64)
+    rs = running_stats['sum']
+    rsq = running_stats['sq']
+    cnt = running_stats['count']
+
+    for i in range(N_RTH_BARS):
+        v = bar_preds[i]
+        if v == 0.0:
+            continue
+        rs += v
+        rsq += v * v
+        cnt += 1
+        if cnt >= 50:
+            mean = rs / cnt
+            var = (rsq / cnt) - mean * mean
+            std = max(np.sqrt(max(var, 0)), 1e-8)
+            zscore[i] = (v - mean) / std
+
+    return zscore, {'sum': rs, 'sq': rsq, 'count': cnt}
+
+
+def multi_horizon_expanding_zscore(
+    predictions_3h: np.ndarray,
+    event_timestamps: np.ndarray,
+    date_str: str,
+    running_stats_list: Optional[List[Dict]] = None,
+) -> Tuple[List[np.ndarray], List[Dict]]:
+    """Compute expanding z-scores for all 3 horizons independently."""
+    if running_stats_list is None:
+        running_stats_list = [None, None, None]
+
+    z_signals = []
+    new_stats = []
+    for h in range(3):
+        preds_h = predictions_3h[:, h]
+        bar_idx, preds_rth = map_predictions_to_bars(preds_h, event_timestamps, date_str)
+        z_h, stats_h = expanding_zscore_bar_signal(preds_rth, bar_idx, running_stats_list[h])
+        z_signals.append(z_h)
+        new_stats.append(stats_h)
+
+    return z_signals, new_stats
+
+
+# ============================================================
+# Signal Generators for the 3 filter types
+# ============================================================
+
+def generate_momentum_signal(
+    fold_data: Dict,
+    event_timestamps: np.ndarray,
+    date_str: str,
+    n_consecutive: int,
+    running_stats: Optional[Dict] = None,
+) -> Tuple[np.ndarray, Dict]:
+    """Momentum filter: only signal when last N consecutive predictions agree on direction."""
+    preds_10s = fold_data['predictions'][:, 2]
+    bar_idx, preds_rth = map_predictions_to_bars(preds_10s, event_timestamps, date_str)
+    z_signal, new_stats = expanding_zscore_bar_signal(preds_rth, bar_idx, running_stats)
+
+    nonzero_bars = np.where(z_signal != 0)[0]
+    if len(nonzero_bars) < n_consecutive:
+        return np.zeros(N_RTH_BARS, dtype=np.float64), new_stats
+
+    momentum_signal = np.zeros(N_RTH_BARS, dtype=np.float64)
+    recent_signs = []
+    for bar in nonzero_bars:
+        sign = 1 if z_signal[bar] > 0 else -1
+        recent_signs.append(sign)
+        if len(recent_signs) > n_consecutive:
+            recent_signs = recent_signs[-n_consecutive:]
+        if len(recent_signs) >= n_consecutive:
+            if all(s == recent_signs[-1] for s in recent_signs[-n_consecutive:]):
+                momentum_signal[bar] = z_signal[bar]
+
+    return momentum_signal, new_stats
+
+
+def generate_agree_all3_signal(
+    fold_data: Dict,
+    event_timestamps: np.ndarray,
+    date_str: str,
+    running_stats_list: Optional[List[Dict]] = None,
+) -> Tuple[np.ndarray, List[Dict]]:
+    """All 3 horizons agree on direction. Signal magnitude from 10s z-score."""
+    z_signals, new_stats = multi_horizon_expanding_zscore(
+        fold_data['predictions'], event_timestamps, date_str, running_stats_list
+    )
+
+    agreement = (z_signals[0] != 0) & (z_signals[1] != 0) & (z_signals[2] != 0)
+    ref_sign = np.sign(z_signals[0])
+    agreement &= (np.sign(z_signals[1]) == ref_sign)
+    agreement &= (np.sign(z_signals[2]) == ref_sign)
+
+    result = np.where(agreement, z_signals[2], 0.0)
+    return result, new_stats
+
+
+# ============================================================
+# Strategy Specification
+# ============================================================
+
+@dataclass
+class StrategySpec:
+    """Strategy specification."""
+    label: str
+    signal_type: str  # 'momentum_2', 'momentum_3', 'agree_all3'
+    z_threshold: float
+    exit_type: str    # 'time_30s', 'bracket_wide', 'bracket_balanced'
+    time_filter: str  # 'none', 'midday'
+
+    def to_cli_args(self) -> List[str]:
+        args = [
+            '--chase-entry',
+            '--chase-max-ticks', '1',
+            '--chase-max-reprices', '3',
+            '--signal-threshold', str(self.z_threshold),
+        ]
+
+        # Exit type
+        if self.exit_type == 'time_30s':
+            args.extend(['--hold-ms', '30000'])
+        elif self.exit_type == 'bracket_wide':
+            args.extend(['--hold-ms', '60000'])
+            args.extend(['--stop-loss-ticks', '4'])
+            args.extend(['--take-profit-ticks', '8'])
+        elif self.exit_type == 'bracket_balanced':
+            args.extend(['--hold-ms', '30000'])
+            args.extend(['--stop-loss-ticks', '3'])
+            args.extend(['--take-profit-ticks', '4'])
+
+        # Time filter
+        if self.time_filter == 'midday':
+            args.extend(['--time-window-start', '10:00'])
+            args.extend(['--time-window-end', '14:00'])
+
+        args.append('--quiet')
+        return args
+
+
+def build_strategy_matrix() -> List[StrategySpec]:
+    """Build the 45-strategy combinatorial matrix."""
+    signal_filters = ['momentum_2', 'momentum_3', 'agree_all3']
+    z_thresholds = [2.5, 3.0, 5.0]
+    exit_types = ['time_30s', 'bracket_wide', 'bracket_balanced']
+    time_filters = ['none', 'midday']
+
+    strategies = []
+    for sig in signal_filters:
+        for z in z_thresholds:
+            for exit_t in exit_types:
+                # Skip z5.0 + time_30s (too few trades)
+                if z == 5.0 and exit_t == 'time_30s':
+                    continue
+                for tf in time_filters:
+                    z_str = f'z{z}'
+                    tf_str = '' if tf == 'none' else f'_{tf}'
+                    label = f'{sig}_{z_str}_{exit_t}{tf_str}'
+
+                    strategies.append(StrategySpec(
+                        label=label,
+                        signal_type=sig,
+                        z_threshold=z,
+                        exit_type=exit_t,
+                        time_filter=tf,
+                    ))
+
+    return strategies
+
+
+# ============================================================
+# Signal Preparation
+# ============================================================
+
+def prepare_all_signals() -> Dict[str, Dict[str, Path]]:
+    """Prepare prediction NPZ files for each signal type x date.
+
+    Returns: {signal_type: {date_str: pred_npz_path}}
+    """
+    log.info("\nPreparing prediction signals...")
+
+    folds_data = []
+    for fp in FOLD_FILES:
+        fd = load_fold(fp)
+        if fd:
+            folds_data.append(fd)
+            log.info(f"  Loaded fold: {fd['date_str']} ({fd['n_samples']} samples)")
+
+    if not folds_data:
+        log.error("No fold data loaded!")
+        return {}
+
+    folds_data.sort(key=lambda x: x['date_str'])
+
+    timestamps_map = {}
+    for fd in folds_data:
+        ts = load_event_timestamps(fd['date_str'])
+        if ts is not None:
+            timestamps_map[fd['date_str']] = ts
+        else:
+            log.warning(f"  No event timestamps for {fd['date_str']}")
+
+    signal_cache = {}
+
+    # ── momentum_2 signals ──
+    log.info("  Generating momentum_2 signals...")
+    running_stats = None
+    for fd in folds_data:
+        date_str = fd['date_str']
+        if date_str not in timestamps_map:
+            continue
+        cache_path = PRED_CACHE_DIR / f'momentum_2_{date_str}.npz'
+        if not cache_path.exists():
+            z_signal, running_stats = generate_momentum_signal(
+                fd, timestamps_map[date_str], date_str, 2, running_stats
+            )
+            np.savez_compressed(str(cache_path), predictions=z_signal)
+            log.info(f"    {date_str}: {int(np.count_nonzero(z_signal))} signals")
+        else:
+            data = np.load(str(cache_path))
+            nz = data['predictions'][data['predictions'] != 0]
+            if running_stats is None:
+                running_stats = {'sum': 0.0, 'sq': 0.0, 'count': 0}
+            running_stats['sum'] += float(np.sum(nz))
+            running_stats['sq'] += float(np.sum(nz ** 2))
+            running_stats['count'] += len(nz)
+            log.info(f"    {date_str}: cached ({len(nz)} nonzero)")
+        signal_cache.setdefault('momentum_2', {})[date_str] = cache_path
+
+    # ── momentum_3 signals ──
+    log.info("  Generating momentum_3 signals...")
+    running_stats = None
+    for fd in folds_data:
+        date_str = fd['date_str']
+        if date_str not in timestamps_map:
+            continue
+        cache_path = PRED_CACHE_DIR / f'momentum_3_{date_str}.npz'
+        if not cache_path.exists():
+            z_signal, running_stats = generate_momentum_signal(
+                fd, timestamps_map[date_str], date_str, 3, running_stats
+            )
+            np.savez_compressed(str(cache_path), predictions=z_signal)
+            log.info(f"    {date_str}: {int(np.count_nonzero(z_signal))} signals")
+        else:
+            data = np.load(str(cache_path))
+            nz = data['predictions'][data['predictions'] != 0]
+            if running_stats is None:
+                running_stats = {'sum': 0.0, 'sq': 0.0, 'count': 0}
+            running_stats['sum'] += float(np.sum(nz))
+            running_stats['sq'] += float(np.sum(nz ** 2))
+            running_stats['count'] += len(nz)
+            log.info(f"    {date_str}: cached ({len(nz)} nonzero)")
+        signal_cache.setdefault('momentum_3', {})[date_str] = cache_path
+
+    # ── agree_all3 signals ──
+    log.info("  Generating agree_all3 signals...")
+    running_stats_list = None
+    for fd in folds_data:
+        date_str = fd['date_str']
+        if date_str not in timestamps_map:
+            continue
+        cache_path = PRED_CACHE_DIR / f'agree_all3_{date_str}.npz'
+        if not cache_path.exists():
+            z_signal, running_stats_list = generate_agree_all3_signal(
+                fd, timestamps_map[date_str], date_str, running_stats_list
+            )
+            np.savez_compressed(str(cache_path), predictions=z_signal)
+            log.info(f"    {date_str}: {int(np.count_nonzero(z_signal))} signals")
+        else:
+            log.info(f"    {date_str}: cached")
+            if running_stats_list is None:
+                running_stats_list = [None, None, None]
+        signal_cache.setdefault('agree_all3', {})[date_str] = cache_path
+
+    del timestamps_map
+    gc.collect()
+
+    log.info(f"  Signal types prepared: {list(signal_cache.keys())}")
+    return signal_cache
+
+
+# ============================================================
+# Fill Simulator Interface
+# ============================================================
+
+def run_fill_sim(
+    date_str: str,
+    pred_file: Path,
+    strategy: StrategySpec,
+    out_dir: Path,
+) -> Optional[Dict]:
+    """Run Rust fill_sim_cli for a single day + strategy."""
+    mbo_file = MBO_DIR / f'glbx-mdp3-{date_str}.mbo.dbn.zst'
+    if not mbo_file.exists():
+        mbo_file = MBO_DIR / f'glbx-mdp3-{date_str}.mbo.dbn'
+    if not mbo_file.exists():
+        return None
+
+    out_file = out_dir / f'{strategy.label}_{date_str}.json'
+
+    cmd = [
+        str(BINARY),
+        '--mbo-file', str(mbo_file),
+        '--predictions', str(pred_file),
+        '--output', str(out_file),
+    ] + strategy.to_cli_args()
+
+    try:
+        r = subprocess.run(cmd, capture_output=True, text=True, timeout=600)
+        if r.returncode != 0:
+            log.debug(f"Sim failed {strategy.label}/{date_str}: {r.stderr[:200]}")
+            return None
+        if not out_file.exists():
+            return None
+        with open(out_file) as f:
+            return json.load(f)
+    except subprocess.TimeoutExpired:
+        log.warning(f"Timeout: {strategy.label}/{date_str}")
+        return None
+    except Exception as e:
+        log.debug(f"Error {strategy.label}/{date_str}: {e}")
+        return None
+
+
+def run_strategy_sweep(
+    strategies: List[StrategySpec],
+    signal_cache: Dict[str, Dict[str, Path]],
+    workers: int = 8,
+) -> Dict[str, Dict[str, Dict]]:
+    """Run all strategies across all days in parallel."""
+    sim_out = RESULTS_DIR / f'sim_{_ts}'
+    sim_out.mkdir(parents=True, exist_ok=True)
+
+    jobs = []
+    for strat in strategies:
+        date_files = signal_cache.get(strat.signal_type, {})
+        for date_str, pred_file in sorted(date_files.items()):
+            jobs.append({
+                'date': date_str,
+                'pred_file': pred_file,
+                'strategy': strat,
+            })
+
+    log.info(f"\nRunning {len(jobs)} sim jobs ({workers} workers)")
+
+    results = {}
+    done = 0
+    t0 = time.time()
+
+    with ThreadPoolExecutor(max_workers=workers) as executor:
+        futures = {}
+        for job in jobs:
+            future = executor.submit(
+                run_fill_sim,
+                job['date'], job['pred_file'], job['strategy'], sim_out,
+            )
+            futures[future] = job
+
+        for future in as_completed(futures):
+            done += 1
+            job = futures[future]
+            try:
+                result = future.result()
+                if result:
+                    label = job['strategy'].label
+                    if label not in results:
+                        results[label] = {}
+                    results[label][job['date']] = result
+            except Exception as e:
+                log.debug(f"Job error: {e}")
+
+            if done % 25 == 0 or done == len(jobs):
+                elapsed = time.time() - t0
+                rate = done / elapsed if elapsed > 0 else 0
+                remaining = (len(jobs) - done) / max(rate, 0.01)
+                log.info(f"  [{done}/{len(jobs)}] {rate:.1f} jobs/s, "
+                         f"~{remaining:.0f}s remaining")
+
+    elapsed = time.time() - t0
+    log.info(f"Sweep done: {done} jobs in {elapsed:.1f}s")
+    return results
+
+
+# ============================================================
+# Analysis & Reporting
+# ============================================================
+
+def aggregate_results(
+    results: Dict[str, Dict[str, Dict]],
+    strategy_map: Dict[str, StrategySpec],
+) -> List[Dict]:
+    """Aggregate per-day sim results into per-strategy summaries."""
+    summaries = []
+
+    for label, date_results in results.items():
+        total_pnl = 0.0
+        total_trades = 0
+        total_signals = 0
+        total_filled = 0
+        total_wins = 0
+        daily_pnls = []
+        all_trade_pnls = []
+        dates = []
+        long_pnls = []
+        short_pnls = []
+
+        for date_str, res in sorted(date_results.items()):
+            dates.append(date_str)
+            day_pnl = res.get('total_pnl_dollars', 0)
+            total_pnl += day_pnl
+            total_trades += res.get('total_trades', 0)
+            total_signals += res.get('total_signals', 0)
+            total_filled += res.get('total_filled', 0)
+            daily_pnls.append(day_pnl)
+
+            if 'trades' in res:
+                for trade in res['trades']:
+                    pnl = trade.get('pnl_dollars', 0)
+                    all_trade_pnls.append(pnl)
+                    if pnl > 0:
+                        total_wins += 1
+                    sig = trade.get('signal_strength', trade.get('entry_signal', 0))
+                    if sig > 0:
+                        long_pnls.append(pnl)
+                    else:
+                        short_pnls.append(pnl)
+
+        n_days = len(date_results)
+        if n_days == 0:
+            continue
+
+        win_rate = total_wins / max(total_trades, 1)
+        fill_rate = total_filled / max(total_signals, 1)
+        avg_daily = np.mean(daily_pnls) if daily_pnls else 0
+
+        # Sortino
+        if len(daily_pnls) > 1:
+            downside = [min(0, x) for x in daily_pnls]
+            downside_std = np.std(downside)
+            sortino = (avg_daily / max(downside_std, 1e-8)) * np.sqrt(252)
+        else:
+            sortino = 0.0
+
+        gross_profit = sum(p for p in all_trade_pnls if p > 0)
+        gross_loss = abs(sum(p for p in all_trade_pnls if p < 0))
+        profit_factor = gross_profit / max(gross_loss, 0.01)
+        avg_trade_pnl = np.mean(all_trade_pnls) if all_trade_pnls else 0
+
+        # Max drawdown
+        cum = np.cumsum(daily_pnls) if daily_pnls else np.array([0])
+        peak = np.maximum.accumulate(cum)
+        max_dd = abs(float((cum - peak).min())) if len(cum) > 0 else 0
+
+        strat = strategy_map.get(label)
+
+        summaries.append({
+            'label': label,
+            'signal_type': strat.signal_type if strat else '',
+            'z_threshold': strat.z_threshold if strat else 0,
+            'exit_type': strat.exit_type if strat else '',
+            'time_filter': strat.time_filter if strat else '',
+            'total_pnl': round(total_pnl, 2),
+            'n_days': n_days,
+            'n_trades': total_trades,
+            'n_signals': total_signals,
+            'trades_per_day': round(total_trades / max(n_days, 1), 1),
+            'fill_rate': round(fill_rate, 4),
+            'win_rate': round(win_rate, 4),
+            'sortino': round(sortino, 2),
+            'profit_factor': round(profit_factor, 2),
+            'avg_daily_pnl': round(avg_daily, 2),
+            'avg_trade_pnl': round(avg_trade_pnl, 2),
+            'avg_trade_ticks': round(avg_trade_pnl / TICK_VALUE, 3),
+            'max_dd': round(max_dd, 2),
+            'long_trades': len(long_pnls),
+            'long_pnl': round(sum(long_pnls), 2),
+            'short_trades': len(short_pnls),
+            'short_pnl': round(sum(short_pnls), 2),
+            'daily_pnls': {d: round(p, 2) for d, p in zip(dates, daily_pnls)},
+        })
+
+    summaries.sort(key=lambda x: x['sortino'], reverse=True)
+    return summaries
+
+
+def print_results_table(summaries: List[Dict], title: str = "Results"):
+    """Print formatted results table."""
+    log.info(f"\n{'=' * 170}")
+    log.info(f" {title}")
+    log.info(f"{'=' * 170}")
+
+    if not summaries:
+        log.info("  No results.")
+        return
+
+    header = (
+        f"{'Strategy':<50} "
+        f"{'Total P&L':>10} "
+        f"{'Trades':>7} "
+        f"{'T/Day':>6} "
+        f"{'FillR':>6} "
+        f"{'WinR':>6} "
+        f"{'AvgTrd':>8} "
+        f"{'Sortino':>8} "
+        f"{'PF':>5} "
+        f"{'MaxDD':>8} "
+        f"{'Long$':>8} "
+        f"{'Short$':>8}"
+    )
+    log.info(header)
+    log.info("-" * 170)
+
+    for s in summaries:
+        pnl_marker = '+' if s['total_pnl'] > 0 else ' '
+        line = (
+            f"{s['label']:<50} "
+            f"{pnl_marker}${abs(s['total_pnl']):>8,.0f} "
+            f"{s['n_trades']:>7} "
+            f"{s['trades_per_day']:>5.1f} "
+            f"{s['fill_rate']:>5.1%} "
+            f"{s['win_rate']:>5.1%} "
+            f"${s['avg_trade_pnl']:>7.2f} "
+            f"{s['sortino']:>8.2f} "
+            f"{s['profit_factor']:>5.2f} "
+            f"${s['max_dd']:>7,.0f} "
+            f"${s['long_pnl']:>7,.0f} "
+            f"${s['short_pnl']:>7,.0f}"
+        )
+        log.info(line)
+
+    n_days = summaries[0]['n_days'] if summaries else 0
+    log.info(f"\n  ES Futures | Tick=$12.50 | Commission=$4.70 RT | {n_days} OOT days")
+
+
+def print_dimension_analysis(summaries: List[Dict]):
+    """Print analysis by each dimension (filter, z, exit, time)."""
+    log.info(f"\n{'=' * 100}")
+    log.info(" DIMENSION ANALYSIS — Average P&L by each factor")
+    log.info(f"{'=' * 100}")
+
+    dims = [
+        ('Signal Filter', 'signal_type'),
+        ('Z Threshold', 'z_threshold'),
+        ('Exit Type', 'exit_type'),
+        ('Time Filter', 'time_filter'),
+    ]
+
+    for dim_name, dim_key in dims:
+        groups = defaultdict(list)
+        for s in summaries:
+            groups[str(s[dim_key])].append(s)
+
+        log.info(f"\n  {dim_name}:")
+        log.info(f"  {'Value':<20} {'Avg P&L':>10} {'Avg Sortino':>12} {'Avg WinR':>10} {'Avg Trades':>10} {'N Strats':>8}")
+        log.info(f"  {'-'*80}")
+
+        for val, strats in sorted(groups.items()):
+            avg_pnl = np.mean([s['total_pnl'] for s in strats])
+            avg_sort = np.mean([s['sortino'] for s in strats])
+            avg_wr = np.mean([s['win_rate'] for s in strats])
+            avg_trades = np.mean([s['n_trades'] for s in strats])
+            pnl_marker = '+' if avg_pnl > 0 else ' '
+            log.info(f"  {val:<20} {pnl_marker}${abs(avg_pnl):>8,.0f} {avg_sort:>12.2f} {avg_wr:>9.1%} {avg_trades:>10.0f} {len(strats):>8}")
+
+
+def print_top_strategies(summaries: List[Dict], top_n: int = 10):
+    """Print detailed analysis of top strategies."""
+    profitable = [s for s in summaries if s['total_pnl'] > 0]
+
+    log.info(f"\n{'=' * 80}")
+    log.info(f"  PROFITABLE: {len(profitable)} / {len(summaries)} strategies")
+    log.info(f"{'=' * 80}")
+
+    show = profitable if profitable else summaries[:top_n]
+    for rank, s in enumerate(show[:top_n]):
+        log.info(f"\n  #{rank + 1} {s['label']}")
+        log.info(f"  Filter={s['signal_type']}  Z={s['z_threshold']}  Exit={s['exit_type']}  Time={s['time_filter']}")
+        log.info(f"  Total P&L:     ${s['total_pnl']:,.2f}")
+        log.info(f"  Trades:        {s['n_trades']} ({s['trades_per_day']:.1f}/day)")
+        log.info(f"  Win rate:      {s['win_rate']:.1%}")
+        log.info(f"  Avg trade:     ${s['avg_trade_pnl']:.2f} ({s['avg_trade_ticks']:.2f} ticks)")
+        log.info(f"  Sortino:       {s['sortino']:.2f}")
+        log.info(f"  Profit factor: {s['profit_factor']:.2f}")
+        log.info(f"  Max DD:        ${s['max_dd']:,.2f}")
+        log.info(f"  Long:          {s['long_trades']} trades -> ${s['long_pnl']:,.2f}")
+        log.info(f"  Short:         {s['short_trades']} trades -> ${s['short_pnl']:,.2f}")
+        log.info(f"  Daily P&L:")
+        for date, pnl in sorted(s['daily_pnls'].items()):
+            marker = '+' if pnl >= 0 else '-'
+            log.info(f"    {date}: {marker}${abs(pnl):,.2f}")
+
+
+# ============================================================
+# Main
+# ============================================================
+
+def main():
+    parser = argparse.ArgumentParser(
+        description='Momentum Combos v5 — Combinatorial Strategy Tester',
+    )
+    parser.add_argument('--workers', type=int, default=8)
+    parser.add_argument('--clear-cache', action='store_true')
+    parser.add_argument('--dry-run', action='store_true')
+    parser.add_argument('--top-n', type=int, default=10)
+
+    args = parser.parse_args()
+
+    log.info("=" * 80)
+    log.info("MOMENTUM COMBOS v5 — Combinatorial Strategy Tester")
+    log.info("=" * 80)
+    log.info(f"  Model:       CNN-Mamba v2 (5 folds, Feb 23-27)")
+    log.info(f"  Instrument:  ES (tick=$12.50, commission=$4.70 RT)")
+    log.info(f"  Workers:     {args.workers}")
+    log.info("=" * 80)
+
+    if args.clear_cache:
+        import shutil
+        if PRED_CACHE_DIR.exists():
+            shutil.rmtree(PRED_CACHE_DIR)
+            PRED_CACHE_DIR.mkdir(parents=True, exist_ok=True)
+        log.info("  Cache cleared")
+
+    # Build strategy matrix
+    strategies = build_strategy_matrix()
+    strategy_map = {s.label: s for s in strategies}
+
+    log.info(f"\n  Strategy matrix: {len(strategies)} combinations")
+    log.info(f"  Signal filters: momentum_2, momentum_3, agree_all3")
+    log.info(f"  Z thresholds:   2.5, 3.0, 5.0")
+    log.info(f"  Exit types:     time_30s, bracket_wide (SL4/TP8/60s), bracket_balanced (SL3/TP4/30s)")
+    log.info(f"  Time filters:   none, midday (10:00-14:00 ET)")
+    log.info(f"  Excluded:       z5.0 + time_30s (too few trades)")
+
+    if args.dry_run:
+        for s in strategies:
+            log.info(f"  {s.label}")
+        log.info(f"\nDry run: {len(strategies)} strategies.")
+        return
+
+    if not BINARY.exists():
+        log.error(f"fill_sim_cli not found: {BINARY}")
+        sys.exit(1)
+
+    # ── Phase 1: Prepare signals ──
+    log.info(f"\n{'=' * 60}")
+    log.info(f"  PHASE 1: Signal Preparation")
+    log.info(f"{'=' * 60}")
+
+    signal_cache = prepare_all_signals()
+    if not signal_cache:
+        log.error("No signals prepared.")
+        sys.exit(1)
+
+    # ── Phase 2: Fill simulation sweep ──
+    log.info(f"\n{'=' * 60}")
+    log.info(f"  PHASE 2: Fill Simulation Sweep ({len(strategies)} strategies x 5 days)")
+    log.info(f"{'=' * 60}")
+
+    sim_results = run_strategy_sweep(strategies, signal_cache, workers=args.workers)
+
+    # ── Phase 3: Aggregate and report ──
+    log.info(f"\n{'=' * 60}")
+    log.info(f"  PHASE 3: Analysis & Reporting")
+    log.info(f"{'=' * 60}")
+
+    summaries = aggregate_results(sim_results, strategy_map)
+
+    # Full table sorted by Sortino
+    print_results_table(summaries, "ALL STRATEGIES — Sorted by Sortino")
+
+    # Dimension analysis
+    print_dimension_analysis(summaries)
+
+    # Top strategies
+    print_top_strategies(summaries, top_n=args.top_n)
+
+    # ── Save results ──
+    out_file = RESULTS_DIR / f'momentum_v5_results_{_ts}.json'
+    save_data = {
+        'timestamp': _ts,
+        'instrument': 'ES',
+        'tick_value': TICK_VALUE,
+        'commission_rt': COMMISSION_RT,
+        'n_strategies_tested': len(summaries),
+        'n_profitable': len([s for s in summaries if s['total_pnl'] > 0]),
+        'strategy_matrix': {
+            'signal_filters': ['momentum_2', 'momentum_3', 'agree_all3'],
+            'z_thresholds': [2.5, 3.0, 5.0],
+            'exit_types': ['time_30s', 'bracket_wide', 'bracket_balanced'],
+            'time_filters': ['none', 'midday'],
+            'excluded': 'z5.0 + time_30s',
+        },
+        'strategies': summaries,
+    }
+    with open(out_file, 'w') as f:
+        json.dump(save_data, f, indent=2, default=str)
+
+    log.info(f"\n{'=' * 80}")
+    log.info(f"  MOMENTUM COMBOS v5 COMPLETE")
+    log.info(f"{'=' * 80}")
+    log.info(f"  Strategies tested:  {len(summaries)}")
+    log.info(f"  Profitable:         {len([s for s in summaries if s['total_pnl'] > 0])}")
+    if summaries:
+        best = summaries[0]
+        log.info(f"  Best (Sortino):     {best['label']} "
+                 f"(Sortino={best['sortino']:.2f}, P&L=${best['total_pnl']:,.0f})")
+    log.info(f"  Results saved:      {out_file}")
+    log.info(f"  Log file:           {_log_file}")
+    log.info(f"{'=' * 80}")
+
+
+if __name__ == '__main__':
+    main()

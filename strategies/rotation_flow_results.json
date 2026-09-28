@@ -1,0 +1,191 @@
+{
+  "A) Rel Strength Mom": {
+    "metrics": {
+      "total_return": 0.8394855823659244,
+      "ann_return": 0.09736976037519529,
+      "ann_vol": 0.14366356414074918,
+      "sharpe": 0.677762388047289,
+      "sortino": 0.8245167401823854,
+      "max_dd": -0.2525479398353234,
+      "win_rate": 0.5316455696202531,
+      "profit_factor": 1.1611029384101479,
+      "calmar": 0.3855496124820156,
+      "n_days": 1653,
+      "sharpe_bull": 1.0683497284897956,
+      "sharpe_bear": 0.2689227667641158,
+      "regime_gap": 0.7482820844216796,
+      "perm_p_value": 0.912,
+      "n_trades": 162
+    },
+    "gates": {
+      "G1_sharpe": true,
+      "G2_perm": false,
+      "G3_regime": false,
+      "G4_mdd": true,
+      "G5_trades": true
+    },
+    "status": "3/5 PASS"
+  },
+  "B) Flow-Weighted": {
+    "metrics": {
+      "total_return": 0.930739923000943,
+      "ann_return": 0.10549966600520966,
+      "ann_vol": 0.14892704930392942,
+      "sharpe": 0.70839828243066,
+      "sortino": 0.8324822748157332,
+      "max_dd": -0.2078689102303331,
+      "win_rate": 0.5063291139240507,
+      "profit_factor": 1.177382417612496,
+      "calmar": 0.5075297976862233,
+      "n_days": 1653,
+      "sharpe_bull": 1.1191469487385421,
+      "sharpe_bear": 0.38748713874046065,
+      "regime_gap": 0.6537656299941481,
+      "perm_p_value": 0.858,
+      "n_trades": 162
+    },
+    "gates": {
+      "G1_sharpe": true,
+      "G2_perm": false,
+      "G3_regime": false,
+      "G4_mdd": true,
+      "G5_trades": true
+    },
+    "status": "3/5 PASS"
+  },
+  "C) Price-Flow Div": {
+    "metrics": {
+      "total_return": 0.6490491519125205,
+      "ann_return": 0.0792381333392882,
+      "ann_vol": 0.15294721286136023,
+      "sharpe": 0.518075039126777,
+      "sortino": 0.5927921719247262,
+      "max_dd": -0.23011064679152787,
+      "win_rate": 0.5063291139240507,
+      "profit_factor": 1.1371690450115297,
+      "calmar": 0.34434796655297895,
+      "n_days": 1653,
+      "sharpe_bull": 0.9657162164112079,
+      "sharpe_bear": 0.189412942524258,
+      "regime_gap": 0.8038627297487517,
+      "perm_p_value": 0.989,
+      "n_trades": 141
+    },
+    "gates": {
+      "G1_sharpe": true,
+      "G2_perm": false,
+      "G3_regime": false,
+      "G4_mdd": true,
+      "G5_trades": true
+    },
+    "status": "3/5 PASS"
+  },
+  "D) Mean Reversion": {
+    "metrics": {
+      "total_return": 0.5857919855284341,
+      "ann_return": 0.07282171180795416,
+      "ann_vol": 0.17537792170137403,
+      "sharpe": 0.41522736191633686,
+      "sortino": 0.5127391876262571,
+      "max_dd": -0.2631429738511239,
+      "win_rate": 0.4177215189873418,
+      "profit_factor": 1.1129414887256988,
+      "calmar": 0.2767381956452314,
+      "n_days": 1653,
+      "sharpe_bull": 0.8873558647638844,
+      "sharpe_bear": -0.13170287717744802,
+      "regime_gap": 1.1484217126490652,
+      "perm_p_value": 0.916,
+      "n_trades": 95
+    },
+    "gates": {
+      "G1_sharpe": false,
+      "G2_perm": false,
+      "G3_regime": false,
+      "G4_mdd": true,
+      "G5_trades": true
+    },
+    "status": "2/5 PASS"
+  },
+  "E) Dual Momentum": {
+    "metrics": {
+      "total_return": 0.4600496088384307,
+      "ann_return": 0.05939485005659506,
+      "ann_vol": 0.14408635481906404,
+      "sharpe": 0.4122170353324452,
+      "sortino": 0.456041100490565,
+      "max_dd": -0.30984105001714024,
+      "win_rate": 0.5316455696202531,
+      "profit_factor": 1.1082748736350723,
+      "calmar": 0.19169458028282538,
+      "n_days": 1653,
+      "sharpe_bull": 0.8391906381627083,
+      "sharpe_bear": -0.1132404208284083,
+      "regime_gap": 1.1349400430351946,
+      "perm_p_value": 0.865,
+      "n_trades": 134
+    },
+    "gates": {
+      "G1_sharpe": false,
+      "G2_perm": false,
+      "G3_regime": false,
+      "G4_mdd": false,
+      "G5_trades": true
+    },
+    "status": "1/5 PASS"
+  },
+  "F) Composite": {
+    "metrics": {
+      "total_return": 1.099267858985836,
+      "ann_return": 0.11969380135383356,
+      "ann_vol": 0.14598481628270238,
+      "sharpe": 0.8199058252746891,
+      "sortino": 0.9785268951448866,
+      "max_dd": -0.20294993455803675,
+      "win_rate": 0.5063291139240507,
+      "profit_factor": 1.199451174988612,
+      "calmar": 0.589770090616256,
+      "n_days": 1653,
+      "sharpe_bull": 1.1882381927292056,
+      "sharpe_bear": 0.47230694327392175,
+      "regime_gap": 0.6025149282661052,
+      "perm_p_value": 0.656,
+      "n_trades": 162
+    },
+    "gates": {
+      "G1_sharpe": true,
+      "G2_perm": false,
+      "G3_regime": false,
+      "G4_mdd": true,
+      "G5_trades": true
+    },
+    "status": "3/5 PASS"
+  },
+  "spy_benchmark": {
+    "sharpe": 0.7491691426488756,
+    "sortino": 0.9260813234493234,
+    "max_dd": -0.3371725779466056,
+    "total_return": 1.522682176227494
+  },
+  "backtest_config": {
+    "start": "2020-01-01",
+    "end": "2026-08-01",
+    "sectors": [
+      "XLK",
+      "XLF",
+      "XLE",
+      "XLV",
+      "XLI",
+      "XLC",
+      "XLY",
+      "XLP",
+      "XLB",
+      "XLRE",
+      "XLU"
+    ],
+    "top_n": 3,
+    "train_months": 12,
+    "n_permutations": 1000,
+    "option_spread_cost": 0.01
+  }
+}

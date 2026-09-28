@@ -1,0 +1,341 @@
+# =============================================================================
+# CNN-Mamba v2 + PatchTST Confluence — Live Paper Trading Config
+# =============================================================================
+# Generated: 2026-05-03
+# Status: CANDIDATE (validated on 9 OOT dates Feb-Mar 2026; FIFO sweep complete)
+# Based on:
+#   - decay_analysis_v3/v4 (signal characteristics, long/short asymmetry)
+#   - lower_threshold_results.json (per-side, per-threshold edge quantification)
+#   - fifo_time_exit_backtest_results.json (FIFO-simulated fill rates + exit timing)
+#   - blended_cost_execution_analysis.json (blended passive/market cost model)
+#   - confluence_full_20260501_074241.json (PatchTST veto lift/drag analysis)
+#   - recommended_live_config.json (top-1% recommendation with PatchTST veto)
+#   - winning_configs/cnn_mamba_v2_tp*.json (fill_sim_cli validated parameters)
+#
+# IMPORTANT: This config is MIDPOINT-BASED for signal characteristics.
+# Execution uses FIFO passive-limit entry per HC #74.
+# DO NOT use midpoint-based execution analysis — these are signal quality metrics only.
+# =============================================================================
+
+# --- Identity ---
+version: "1.0.0"
+config_name: "cnn_mamba_v2_confluence_paper_v1"
+created: "2026-05-03"
+status: "candidate"  # candidate | paper_trading | production | retired
+
+# =============================================================================
+# COST CONSTANTS (canonical per CLAUDE.md — do not change)
+# =============================================================================
+costs:
+  tick_size_pts: 0.25
+  tick_value_usd: 12.50
+  commission_rt_ticks: 0.376       # $4.70 / $12.50
+  passive_limit_total_ticks: 0.376 # commission only; no spread crossing
+  market_order_total_ticks: 0.376  # commission only — HC #231(A) no spread cost
+  # ES is 1 tick wide during RTH — no mid fills exist
+
+# =============================================================================
+# MODELS
+# =============================================================================
+models:
+  primary:
+    name: "cnn_mamba_v2"
+    weights_dir: "/home/jupiter/Lvl3Quant/output/cnn_mamba_v2_smart_v3_mar"
+    inference_horizon_primary: "1s"    # IC=0.183, strongest signal
+    inference_horizons_all: ["1s", "5s", "10s"]
+    signal_half_life_ms: 250           # from decay_analysis_v3 — decays fast
+    # Prediction output: z-score normalized. Use absolute |z| for thresholding.
+    normalization: "expanding_zscore"  # MUST be expanding, not full-day
+
+  veto:
+    name: "patchtst"
+    weights_dir: "/home/jupiter/Lvl3Quant/output/cnn_mamba_v2_warmstart_apr"
+    role: "confluence_veto"            # rejects trades when PatchTST disagrees
+    # Confluence analysis: anti_confluence (CM z>2.0 + PT disagrees) has
+    # wr=0.407, Sharpe=-0.177 vs agree wr=0.548, Sharpe=+0.106.
+    # Veto is worth ~10-20 bps Sharpe lift at high z-score tiers.
+    min_z_for_veto: 1.5               # PT must clear |z|>=1.5 to count as agreement
+                                       # "strong_z2.5_pt1.5" = best Sharpe=0.170
+    direction_agreement_required: true  # PT signal must be same sign as CM signal
+
+  vol_model:
+    name: "lgbm_vol"
+    role: "vol_gate_feature"
+    # Used to flag high-vol regime. NOT a veto on its own — used in gate below.
+
+# =============================================================================
+# SIGNAL TIERS
+# =============================================================================
+# Two operational tiers based on validated edge:
+#
+#   TIER A (top 1%, |z| >= ~2.5):
+#     - Both long & short: wr~0.65, avg_move~4.9t, market order profitable
+#     - Short: wr=0.650, passive_net=+4.55t, market_net=+3.56t
+#     - Long:  wr=0.645, passive_net=+4.33t, market_net=+3.33t
+#     - Source: lower_threshold_results.json (1s_short_top1pct, 1s_long_top1pct)
+#
+#   TIER B (top 5-20%, |z| >= ~1.5-2.0):
+#     - SHORT ONLY (long side edge degrades faster)
+#     - Short top10%: wr=0.555, passive_net=+2.24t, market_net=+1.24t
+#     - Short top20%: wr=0.532, passive_net=+2.18t, market_net=+1.18t
+#     - PASSIVE LIMITS ONLY — market orders marginal at this tier
+#     - Source: lower_threshold_results.json, blended_cost_execution_analysis.json
+
+signal_tiers:
+  tier_a:
+    label: "HIGH_CONVICTION"
+    cm_z_threshold: 2.5             # top ~1% of signals
+    sides_allowed: ["long", "short"]
+    order_type: "market"            # +3.3-3.6 ticks net even after 0.376t cost (HC #231(A))
+    patchtst_veto: true             # still veto if PT strongly disagrees
+    expected_metrics:
+      # Source: lower_threshold_results.json 1s_*_top1pct averaged
+      wr_long: 0.645
+      wr_short: 0.650
+      avg_move_ticks_long: 4.71
+      avg_move_ticks_short: 4.93
+      net_per_trade_ticks_passive_long: 4.33
+      net_per_trade_ticks_passive_short: 4.56
+      net_per_trade_ticks_market_long: 3.33
+      net_per_trade_ticks_market_short: 3.56
+      trades_per_day_approx: 13     # top 0.5% from recommended_live_config.json
+
+  tier_b:
+    label: "STANDARD"
+    cm_z_threshold: 2.0             # top ~5-10% of signals
+    sides_allowed: ["short"]        # SHORT ONLY at this tier
+    order_type: "passive_limit"     # +2.2 ticks net; market orders marginal
+    patchtst_veto: true             # required — helps reject false positives
+    expected_metrics:
+      # Source: lower_threshold_results.json 1s_short_top10pct
+      wr_short: 0.555
+      avg_move_ticks_short: 2.61
+      net_per_trade_ticks_passive_short: 2.24
+      net_per_trade_ticks_market_short: 1.24  # market marginal, do not use
+      trades_per_day_approx: 96     # from recommended_live_config.json
+
+# =============================================================================
+# ENTRY RULES
+# =============================================================================
+entry:
+  # --- Time of Day Gate ---
+  # Exclude the opening auction and first 10-15 minutes (thin book, wide spreads)
+  tod_gate:
+    exclude_open_minutes: true
+    exclude_open_start_et: "09:25"    # 5 min before open for any queued orders
+    exclude_open_end_et: "09:40"      # back-test showed 09:30-10:00 is weaker
+    # Note: confluence analysis showed 09:30-10:00 had avg_pnl=0.810 for
+    # strong_z2.5_pt1.5, which is fine — we only exclude the first 10 min
+    # to avoid open auction noise. Keep 09:40-10:00 active.
+    exclude_close_minutes: true
+    exclude_close_start_et: "15:55"   # avoid MOC imbalance distortion
+    exclude_close_end_et: "16:00"
+    # Best hours from confluence analysis: 11:00-12:00 (wr=0.610, +1.84t),
+    #   14:00-15:00 (wr=0.645, +1.34t), 15:00-16:00 (wr=0.637, +2.25t)
+    prime_hours_only: false           # trade all RTH hours except excluded
+
+  # --- Confidence Thresholds ---
+  # Applied per tier above. Signal is CM z-score (expanding normalized).
+  # The threshold maps roughly as:
+  #   |z| >= 2.5 → top ~1%   → TIER A
+  #   |z| >= 2.0 → top ~5%   → TIER B (short only)
+  # Thresholds calibrated from fill_sim_cli sweeps (winning_configs/*.json)
+
+  # --- PatchTST Confluence Veto ---
+  patchtst_veto:
+    enabled: true
+    # Anti-confluence control (cm z>2.0 + PT disagrees):
+    #   wr=0.407, Sharpe=-0.177 — VETO these trades
+    # Agrees (cm z>2.5, PT z>1.5):
+    #   wr=0.583, Sharpe=+0.170, PF=1.592
+    veto_if_disagrees: true         # reject trade when PT direction != CM direction
+    pt_min_z_to_agree: 1.5          # PT needs conviction to count as "agreeing"
+    pt_min_z_to_veto: 0.0           # any PT signal against CM is a veto
+    # If PT has no signal (|z| < 0.5), we do NOT veto — just no bonus
+    pt_no_signal_threshold: 0.5     # |z| below this = PT silent (not a veto)
+
+  # --- Volatility Gate ---
+  vol_gate:
+    enabled: true
+    # LGBM Vol model percentile. Block trading during regime extremes.
+    # Suppress entry if vol is abnormally HIGH (erratic fills, wide spread effective)
+    # or abnormally LOW (no edge in thin market)
+    lgbm_vol_max_percentile: 90     # suppress if vol > 90th pct (expanding window)
+    lgbm_vol_min_percentile: 10     # suppress if vol < 10th pct (dead market)
+    # Note: Spread is variable in ES — gate helps here. "spread_ticks" feature
+    # from exec_feature_analysis showed spread_mean_10k is one of the most stable
+    # features. Use it as a secondary filter.
+    spread_max_ticks: 2.0           # suppress if effective spread > 2 ticks
+    # (ES is normally 1 tick — >2 means wide/thin book)
+
+  # --- Order Placement ---
+  order_placement:
+    tier_a_order_type: "market"           # IOC market order immediately
+    tier_b_order_type: "passive_limit"    # post limit at bid (short) or ask (long)
+    # Entry patience: how long to wait for passive fill before cancel
+    # From fifo_time_exit_backtest: entry_patience=2s gave good fill rates
+    passive_entry_patience_sec: 2.0       # cancel unfilled limit after 2s
+    # Signal half-life is 250ms — don't chase beyond this
+    # If unfilled after patience window → discard, do NOT chase
+    chase_entry: false                    # no chasing; signal has decayed by then
+    # Latency allowance
+    latency_budget_ms: 5                  # modeled from fill_sim_cli --latency-ms 5
+
+# =============================================================================
+# EXIT RULES
+# =============================================================================
+exit:
+  # --- Max Hold Time (based on signal half-life) ---
+  # Signal half-life ~250ms, but position can stay profitable beyond that.
+  # From fifo_time_exit_backtest: hold=10s with passive entry gave sharpe=1.07-2.15.
+  # From recommended_live_config: blended exit (profit → passive limit, else market at 5s)
+  max_hold_ms: 60000                      # hard max: 60s (per winning_configs tp8 params)
+  # Shorter time exit for Tier B (lower conviction):
+  tier_b_max_hold_ms: 10000              # 10s for lower-conviction signals
+
+  # --- Take Profit (TP) ---
+  # From confluence mfe_mae analysis on strong_z2.5_pt1.5: optimal_tp=4 ticks
+  # From fill_sim_cli sweep: tp8 and tp9 were the best winning configs
+  take_profit_ticks_tier_a: 8            # ~4 x commission; from winning configs
+  take_profit_ticks_tier_b: 4            # closer TP for lower-conviction trades
+  tp_order_type: "passive_limit"         # post limit at profit target, then
+                                         # fall back to market if unfilled at max_hold
+
+  # --- Trailing Stop ---
+  # From winning_configs: conviction-exit-bars=20, conviction-exit-mag=0.5
+  # Meaning: if signal reversal magnitude > 0.5 z within 20 bars, exit
+  trailing_stop:
+    enabled: true
+    signal_flip_exit: true              # exit if CM z-score flips direction
+    # Only act on HIGH-CONFIDENCE flip to avoid noise exits:
+    signal_flip_min_z: 1.5             # flip z must exceed this to trigger exit
+    # Price-based trailing stop (secondary protection):
+    trailing_stop_ticks: 4             # trail 4 ticks from MFE peak
+
+  # --- Hard Stop Loss ---
+  # From mfe_mae analysis: mae_1s mean=-2.31t (p10=-5t) for high-conviction
+  # From winning_configs: --stop-loss-ticks 15 (wider, uses signal exit primarily)
+  # We use a tighter hard SL since signal flip exit should catch most losers first
+  hard_stop_loss_ticks: 8              # absolute hard stop (market order)
+  # Vol-based stop: if market moves sharply against position (not signal noise)
+  vol_exit:
+    enabled: true
+    adverse_move_ticks: 5              # exit if 5 ticks adverse within vol window
+    vol_exit_bars: 5                   # check over 5 bars (~250-500ms each)
+
+# =============================================================================
+# RISK MANAGEMENT
+# =============================================================================
+risk:
+  # --- Position Size ---
+  max_contracts: 1                     # paper trading: 1 contract only
+  # Scale to 2-3 contracts once paper Sharpe > 1.5 over 20+ days
+
+  # --- Daily Loss Circuit Breaker ---
+  max_daily_loss_dollars: -500         # halt trading for the day if hit
+  max_daily_loss_ticks: -40            # ~$500 at $12.50/tick
+  # Reset daily P&L at 18:00 ET (CME settlement)
+
+  # --- Consecutive Loss Limit ---
+  max_consecutive_losses: 5            # pause 30 min after 5 consecutive losers
+  consecutive_loss_pause_minutes: 30
+
+  # --- Trade Frequency Limit ---
+  # Prevent over-trading in high-signal-noise environments
+  max_trades_per_day: 200              # hard cap; normal expectation is 13-96/day
+  min_seconds_between_trades: 0        # no cooldown needed (non-overlapping signals)
+
+  # --- Flat at Close ---
+  force_flat_et: "15:55"              # flatten all positions 5 min before close
+  no_new_trades_et: "15:50"           # stop new entries 10 min before close
+
+  # --- Overnight ---
+  hold_overnight: false               # ES paper trader: no overnight positions
+
+# =============================================================================
+# MONITORING & LOGGING
+# =============================================================================
+monitoring:
+  state_file: "/home/jupiter/Lvl3Quant/trading_agents/data/paper_trading_state.json"
+  trade_log: "/home/jupiter/Lvl3Quant/trading_agents/data/paper_trades.jsonl"
+  daily_summary_channel: "system-status"   # Discord channel for EOD summary
+  alert_channel: "general"                 # Discord DM for circuit breakers
+
+  # Metrics to track per trade
+  track_metrics:
+    - "entry_time_et"
+    - "exit_time_et"
+    - "hold_ms"
+    - "side"
+    - "tier"                          # A or B
+    - "cm_z_at_entry"
+    - "pt_z_at_entry"
+    - "entry_order_type"              # market or passive_limit
+    - "fill_price"
+    - "exit_reason"                   # tp | hard_sl | signal_flip | max_hold | vol_exit | circuit_breaker
+    - "gross_pnl_ticks"
+    - "commission_ticks"
+    - "net_pnl_ticks"
+    - "net_pnl_dollars"
+    - "vol_percentile_at_entry"
+    - "tod_bucket"                    # e.g. "10:00-11:00"
+
+  # Alert thresholds
+  alerts:
+    daily_loss_warn_dollars: -250     # warn at 50% of circuit breaker
+    consecutive_losses_warn: 3        # warn at 3 consecutive losses
+
+# =============================================================================
+# EXPECTED PERFORMANCE BENCHMARKS
+# =============================================================================
+# Used to detect regime change / model decay during paper trading.
+# If 20-day rolling metrics fall below these, flag for review.
+expected_performance:
+  # Tier A (top 1%, both sides):
+  tier_a:
+    win_rate_min: 0.60               # below this = model degraded
+    avg_net_ticks_min: 2.0           # below this = execution issue or decay
+    trades_per_day_approx: 13        # from recommended_live_config.json
+    source: "lower_threshold_results.json + recommended_live_config.json"
+
+  # Tier B (top 5-10%, short only):
+  tier_b:
+    win_rate_min: 0.52               # buffer below validated 0.555
+    avg_net_ticks_min: 1.0           # buffer below validated 2.24
+    trades_per_day_approx: 96        # from recommended_live_config.json
+    source: "lower_threshold_results.json 1s_short_top10pct"
+
+  # Confluence with PatchTST (strong_z2.5_pt1.5 regime):
+  confluence:
+    sharpe_daily_min: 0.10           # daily Sharpe; validated 0.170
+    profit_factor_min: 1.30          # validated 1.592
+    win_rate_min: 0.55               # validated 0.583
+    source: "confluence_full_20260501_074241.json strong_z2.5_pt1.5"
+
+  # Blended view:
+  overall:
+    daily_net_dollars_target: 500    # rough daily target (conservative)
+    sharpe_rolling_20d_min: 0.5      # flag if drops below this
+    max_drawdown_flag_dollars: 2000  # flag if daily DD exceeds this (historical max was $1954)
+
+# =============================================================================
+# WHAT IS NOT IN THIS CONFIG (known gaps — require additional work)
+# =============================================================================
+# 1. FIFO fill-rate calibration: The fill probabilities in fifo_time_exit_backtest.py
+#    are estimated (45% @1s, 60% @2s, 85% @10s). Real FIFO queue depth varies.
+#    Status: fill_sim_cli results used for exec timing; live fill rates will calibrate.
+#
+# 2. PatchTST real-time latency: PT runs on Razer. Inference latency is not measured.
+#    The veto must arrive within the entry_patience window (2s). If PT latency > 1.5s,
+#    tier B entries may be bypassed without PT confirmation. Needs measurement.
+#
+# 3. Short-side asymmetry at top-10%: The task specification cites "60.5% WR" for
+#    top-10% short. Validated data shows 55.5% WR (1s_short_top10pct). The 60.5%
+#    figure likely comes from a different analysis (5s horizon or specific date range).
+#    We use the more conservative 55.5% in expected performance.
+#
+# 4. Vol gate calibration: LGBM Vol percentile thresholds (10th/90th) are heuristic.
+#    The exec_feature_analysis shows spread_ticks is stable — rely on spread_max_ticks
+#    as primary guard until vol-regime backtests are run.
+#
+# 5. Overnight gap risk: Config assumes RTH only. Globex session is unexplored.

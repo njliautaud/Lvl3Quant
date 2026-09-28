@@ -1,0 +1,48 @@
+# Core Python dependencies for Lvl3Quant research code (unpinned).
+# This is a research workspace, not a package: individual scripts import
+# different subsets. Python 3.10+ recommended. Rust crate: see rust_cache_builder/.
+
+# --- Numerics & data --------------------------------------------------------
+numpy
+pandas
+scipy
+pyarrow
+numba
+joblib
+pytz
+
+# --- Modeling ---------------------------------------------------------------
+torch
+lightgbm
+xgboost
+scikit-learn
+statsmodels
+optuna
+
+# --- Experiment tracking ----------------------------------------------------
+mlflow
+
+# --- Market data ------------------------------------------------------------
+databento
+yfinance
+
+# --- Plotting, ops & utilities ---------------------------------------------
+matplotlib
+requests
+python-dotenv
+psutil
+
+# --- Used by specific modules (install as needed) --------------------------
+# polars               # fast feature precompute (scripts/hc451_research)
+# ray                  # distributed GPU sweeps (research/sweeps)
+# gymnasium            # FIFO execution RL environment
+# stable-baselines3    # PPO/SAC execution agents
+# mamba-ssm            # CUDA Mamba kernels (Linux + NVIDIA GPU; models fall back to a pure-PyTorch path)
+# hmmlearn             # HMM regime filters
+# pygad                # genetic-algorithm optimizers (wheel_strategy_v1, macro_exposure_v1)
+# alpaca-py            # Alpaca market data / paper trading adapters
+# paramiko             # SSH dispatch to cluster nodes
+# py-clob-client       # Polymarket order-book client (prediction_markets)
+# sortedcontainers     # order-book structures in some replay scripts
+# beautifulsoup4       # HTML scraping in data-ingest helpers
+# tqdm                 # progress bars

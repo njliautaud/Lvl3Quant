@@ -1,0 +1,119 @@
+{
+  "run_date": "2026-08-27T02:18:27.397885",
+  "strategy": "Earnings Momentum Concentration (Strategy B)",
+  "base_params": {
+    "gap_thresh": 0.05,
+    "hold_days": 20,
+    "max_concurrent": 5,
+    "cost_bps": 10
+  },
+  "base_metrics": {
+    "CAGR": 29.9,
+    "Sharpe": 1.06,
+    "Sortino": 1.09,
+    "MaxDD": -33.5,
+    "PF": 1.27,
+    "WR": 51.7,
+    "Trades": 338,
+    "WR_trades": 64.5
+  },
+  "gate_results": {
+    "G1_reimplementation": {
+      "pass": "True",
+      "sharpe": 1.06,
+      "cagr": 29.9
+    },
+    "G2_inverse_signal": {
+      "pass": "False",
+      "orig_sharpe": 1.06,
+      "inv_sharpe": 0.57,
+      "inv_cagr": 15.5,
+      "inv_trades": 330
+    },
+    "FAANG_exclusion": {
+      "full_sharpe": 1.06,
+      "ex_faang_sharpe": 0.8,
+      "faang_dependent": "False"
+    },
+    "G3_random_timing": {
+      "pass": "False",
+      "orig_sharpe": 1.06,
+      "perm_mean": 0.749,
+      "perm_std": 0.182,
+      "p95": 1.07,
+      "p99": 1.12,
+      "p_value": 0.07
+    },
+    "G4_cost_sensitivity": {
+      "pass": "True",
+      "details": {
+        "0": {
+          "sharpe": 1.17,
+          "cagr": 33.4
+        },
+        "10": {
+          "sharpe": 1.06,
+          "cagr": 29.9
+        },
+        "20": {
+          "sharpe": 0.95,
+          "cagr": 26.5
+        },
+        "50": {
+          "sharpe": 0.61,
+          "cagr": 16.9
+        }
+      }
+    },
+    "G5_subperiod": {
+      "pass": false,
+      "periods": [
+        {
+          "period": "2019-01-02 to 2020-11-24",
+          "sharpe": 0.72,
+          "cagr": 23.2,
+          "trades": 79
+        },
+        {
+          "period": "2020-11-25 to 2022-10-21",
+          "sharpe": -0.1,
+          "cagr": -0.3,
+          "trades": 77
+        },
+        {
+          "period": "2022-10-24 to 2024-09-20",
+          "sharpe": 2.13,
+          "cagr": 50.2,
+          "trades": 83
+        },
+        {
+          "period": "2024-09-23 to 2026-08-21",
+          "sharpe": 1.06,
+          "cagr": 29.3,
+          "trades": 91
+        }
+      ]
+    },
+    "G6_parameter_robustness": {
+      "pass": true,
+      "total_combos": 48,
+      "sharpe_above_03": 44,
+      "pct_above": 91.7,
+      "best": {
+        "gap": 0.03,
+        "hold": 20,
+        "max_pos": 3,
+        "sharpe": 1.28
+      },
+      "worst": {
+        "gap": 0.07,
+        "hold": 10,
+        "max_pos": 7,
+        "sharpe": 0.04
+      },
+      "median_sharpe": 0.855
+    }
+  },
+  "overall_pass": false,
+  "gates_passed": 3
+}

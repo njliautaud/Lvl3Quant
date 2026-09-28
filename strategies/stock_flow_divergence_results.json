@@ -1,0 +1,534 @@
+{
+  "run_date": "2026-08-01T01:03:09.846263",
+  "universe": [
+    "AAPL",
+    "MSFT",
+    "GOOGL",
+    "AMZN",
+    "META",
+    "NVDA",
+    "AVGO",
+    "JPM",
+    "UNH",
+    "LLY",
+    "V",
+    "MA",
+    "ABBV",
+    "COST",
+    "HD",
+    "PG",
+    "JNJ",
+    "MRK",
+    "PEP",
+    "KO",
+    "WMT"
+  ],
+  "period": "2020-01-01 to 2026-07-31",
+  "results": {
+    "A": {
+      "name": "OBV Divergence",
+      "n_trades": 1364,
+      "best_horizon": 21,
+      "validation": {
+        "sharpe": {
+          "value": 0.964,
+          "threshold": 0.5,
+          "passed": "True"
+        },
+        "permutation": {
+          "value": 0.995,
+          "threshold": 0.05,
+          "passed": "False"
+        },
+        "regime_gap": {
+          "value": 0.392,
+          "threshold": 0.5,
+          "passed": "True",
+          "bull_sharpe": 1.127,
+          "bear_sharpe": 0.685,
+          "bull_n": 1022,
+          "bear_n": 340
+        },
+        "mdd": {
+          "value": -0.6872,
+          "threshold": -0.3,
+          "passed": "False"
+        },
+        "min_trades": {
+          "value": 1362,
+          "threshold": 30,
+          "passed": true
+        },
+        "all_passed": false
+      },
+      "options": {
+        "5": {
+          "stock_mean_ret": 0.368,
+          "stock_wr": 52.6,
+          "stock_median_ret": 0.211,
+          "options_mean_ret_pct_of_premium": 0.3,
+          "options_wr": 34.8,
+          "options_sharpe": 0.022,
+          "theta_drag_pct": 1.5,
+          "estimated_premium_pct": 2.87,
+          "beats_theta_and_spread": "True"
+        },
+        "10": {
+          "stock_mean_ret": 0.879,
+          "stock_wr": 57.6,
+          "stock_median_ret": 0.749,
+          "options_mean_ret_pct_of_premium": 9.5,
+          "options_wr": 38.7,
+          "options_sharpe": 0.404,
+          "theta_drag_pct": 3.0,
+          "estimated_premium_pct": 2.87,
+          "beats_theta_and_spread": "True"
+        },
+        "21": {
+          "stock_mean_ret": 1.928,
+          "stock_wr": 60.9,
+          "stock_median_ret": 1.742,
+          "options_mean_ret_pct_of_premium": 26.9,
+          "options_wr": 43.0,
+          "options_sharpe": 0.566,
+          "theta_drag_pct": 6.3,
+          "estimated_premium_pct": 2.87,
+          "beats_theta_and_spread": "True"
+        }
+      },
+      "passed": false,
+      "trades_by_ticker": {
+        "JNJ": 149,
+        "MA": 122,
+        "V": 102,
+        "JPM": 98,
+        "WMT": 97,
+        "MRK": 91,
+        "PG": 84,
+        "HD": 78,
+        "AAPL": 72,
+        "PEP": 70,
+        "KO": 67,
+        "MSFT": 59,
+        "COST": 57,
+        "UNH": 51,
+        "META": 40,
+        "LLY": 32,
+        "ABBV": 30,
+        "AMZN": 28,
+        "GOOGL": 18,
+        "AVGO": 13,
+        "NVDA": 6
+      },
+      "trades_by_regime": {
+        "bull": 1024,
+        "bear": 340
+      }
+    },
+    "B": {
+      "name": "MFI Extreme + Price Dip",
+      "n_trades": 212,
+      "best_horizon": 5,
+      "validation": {
+        "sharpe": {
+          "value": 1.783,
+          "threshold": 0.5,
+          "passed": "True"
+        },
+        "permutation": {
+          "value": 0.752,
+          "threshold": 0.05,
+          "passed": "False"
+        },
+        "regime_gap": {
+          "value": 0.276,
+          "threshold": 0.5,
+          "passed": "True",
+          "bull_sharpe": 1.551,
+          "bear_sharpe": 2.144,
+          "bull_n": 136,
+          "bear_n": 76
+        },
+        "mdd": {
+          "value": -0.4698,
+          "threshold": -0.3,
+          "passed": "False"
+        },
+        "min_trades": {
+          "value": 212,
+          "threshold": 30,
+          "passed": true
+        },
+        "all_passed": false
+      },
+      "options": {
+        "5": {
+          "stock_mean_ret": 1.276,
+          "stock_wr": 63.7,
+          "stock_median_ret": 1.218,
+          "options_mean_ret_pct_of_premium": 33.8,
+          "options_wr": 47.2,
+          "options_sharpe": 2.011,
+          "theta_drag_pct": 1.5,
+          "estimated_premium_pct": 2.87,
+          "beats_theta_and_spread": "True"
+        },
+        "10": {
+          "stock_mean_ret": 1.768,
+          "stock_wr": 64.6,
+          "stock_median_ret": 1.592,
+          "options_mean_ret_pct_of_premium": 47.1,
+          "options_wr": 47.2,
+          "options_sharpe": 1.437,
+          "theta_drag_pct": 3.0,
+          "estimated_premium_pct": 2.87,
+          "beats_theta_and_spread": "True"
+        },
+        "21": {
+          "stock_mean_ret": 2.627,
+          "stock_wr": 61.8,
+          "stock_median_ret": 2.233,
+          "options_mean_ret_pct_of_premium": 71.7,
+          "options_wr": 44.3,
+          "options_sharpe": 1.019,
+          "theta_drag_pct": 6.3,
+          "estimated_premium_pct": 2.87,
+          "beats_theta_and_spread": "True"
+        }
+      },
+      "passed": false,
+      "trades_by_ticker": {
+        "HD": 16,
+        "JNJ": 15,
+        "AVGO": 14,
+        "PG": 14,
+        "MRK": 14,
+        "GOOGL": 13,
+        "AMZN": 13,
+        "COST": 12,
+        "MSFT": 11,
+        "PEP": 10,
+        "AAPL": 10,
+        "NVDA": 10,
+        "UNH": 9,
+        "META": 8,
+        "LLY": 8,
+        "KO": 7,
+        "JPM": 7,
+        "V": 6,
+        "ABBV": 6,
+        "WMT": 5,
+        "MA": 4
+      },
+      "trades_by_regime": {
+        "bull": 136,
+        "bear": 76
+      }
+    },
+    "C": {
+      "name": "VPT Divergence",
+      "n_trades": 0,
+      "passed": false
+    },
+    "D": {
+      "name": "CMF Breakout",
+      "n_trades": 352,
+      "best_horizon": 21,
+      "validation": {
+        "sharpe": {
+          "value": 0.534,
+          "threshold": 0.5,
+          "passed": "True"
+        },
+        "permutation": {
+          "value": 0.243,
+          "threshold": 0.05,
+          "passed": "False"
+        },
+        "regime_gap": {
+          "value": 0.078,
+          "threshold": 0.5,
+          "passed": "True",
+          "bull_sharpe": 0.519,
+          "bear_sharpe": 0.562,
+          "bull_n": 226,
+          "bear_n": 114
+        },
+        "mdd": {
+          "value": -0.5551,
+          "threshold": -0.3,
+          "passed": "False"
+        },
+        "min_trades": {
+          "value": 340,
+          "threshold": 30,
+          "passed": true
+        },
+        "all_passed": false
+      },
+      "options": {
+        "5": {
+          "stock_mean_ret": 0.376,
+          "stock_wr": 51.1,
+          "stock_median_ret": 0.023,
+          "options_mean_ret_pct_of_premium": 14.2,
+          "options_wr": 38.4,
+          "options_sharpe": 0.783,
+          "theta_drag_pct": 1.5,
+          "estimated_premium_pct": 2.87,
+          "beats_theta_and_spread": "True"
+        },
+        "10": {
+          "stock_mean_ret": 0.277,
+          "stock_wr": 52.3,
+          "stock_median_ret": 0.383,
+          "options_mean_ret_pct_of_premium": 21.9,
+          "options_wr": 37.4,
+          "options_sharpe": 0.604,
+          "theta_drag_pct": 3.0,
+          "estimated_premium_pct": 2.87,
+          "beats_theta_and_spread": "True"
+        },
+        "21": {
+          "stock_mean_ret": 1.327,
+          "stock_wr": 52.9,
+          "stock_median_ret": 0.825,
+          "options_mean_ret_pct_of_premium": 36.4,
+          "options_wr": 40.0,
+          "options_sharpe": 0.623,
+          "theta_drag_pct": 6.3,
+          "estimated_premium_pct": 2.87,
+          "beats_theta_and_spread": "True"
+        }
+      },
+      "passed": false,
+      "trades_by_ticker": {
+        "META": 35,
+        "NVDA": 27,
+        "AMZN": 24,
+        "GOOGL": 23,
+        "MSFT": 22,
+        "AVGO": 22,
+        "MA": 20,
+        "HD": 19,
+        "LLY": 17,
+        "AAPL": 16,
+        "MRK": 16,
+        "JPM": 15,
+        "ABBV": 14,
+        "COST": 13,
+        "UNH": 12,
+        "PEP": 12,
+        "V": 10,
+        "WMT": 10,
+        "PG": 10,
+        "JNJ": 9,
+        "KO": 6
+      },
+      "trades_by_regime": {
+        "bull": 238,
+        "bear": 114
+      }
+    },
+    "E": {
+      "name": "A/D vs Price Divergence",
+      "n_trades": 921,
+      "best_horizon": 21,
+      "validation": {
+        "sharpe": {
+          "value": 0.671,
+          "threshold": 0.5,
+          "passed": "True"
+        },
+        "permutation": {
+          "value": 1.0,
+          "threshold": 0.05,
+          "passed": "False"
+        },
+        "regime_gap": {
+          "value": 0.03,
+          "threshold": 0.5,
+          "passed": "True",
+          "bull_sharpe": 0.677,
+          "bear_sharpe": 0.657,
+          "bull_n": 706,
+          "bear_n": 195
+        },
+        "mdd": {
+          "value": -0.8485,
+          "threshold": -0.3,
+          "passed": "False"
+        },
+        "min_trades": {
+          "value": 901,
+          "threshold": 30,
+          "passed": true
+        },
+        "all_passed": false
+      },
+      "options": {
+        "5": {
+          "stock_mean_ret": 0.247,
+          "stock_wr": 52.2,
+          "stock_median_ret": 0.141,
+          "options_mean_ret_pct_of_premium": 8.5,
+          "options_wr": 36.8,
+          "options_sharpe": 0.509,
+          "theta_drag_pct": 1.5,
+          "estimated_premium_pct": 2.87,
+          "beats_theta_and_spread": "True"
+        },
+        "10": {
+          "stock_mean_ret": 0.64,
+          "stock_wr": 52.6,
+          "stock_median_ret": 0.485,
+          "options_mean_ret_pct_of_premium": 26.8,
+          "options_wr": 38.4,
+          "options_sharpe": 0.763,
+          "theta_drag_pct": 3.0,
+          "estimated_premium_pct": 2.87,
+          "beats_theta_and_spread": "True"
+        },
+        "21": {
+          "stock_mean_ret": 1.903,
+          "stock_wr": 54.8,
+          "stock_median_ret": 0.938,
+          "options_mean_ret_pct_of_premium": 57.0,
+          "options_wr": 40.3,
+          "options_sharpe": 0.785,
+          "theta_drag_pct": 6.3,
+          "estimated_premium_pct": 2.87,
+          "beats_theta_and_spread": "True"
+        }
+      },
+      "passed": false,
+      "trades_by_ticker": {
+        "NVDA": 150,
+        "AAPL": 92,
+        "MSFT": 75,
+        "COST": 66,
+        "ABBV": 62,
+        "AMZN": 59,
+        "AVGO": 58,
+        "HD": 56,
+        "LLY": 53,
+        "GOOGL": 52,
+        "MA": 39,
+        "PEP": 34,
+        "META": 28,
+        "UNH": 27,
+        "JNJ": 16,
+        "V": 13,
+        "JPM": 11,
+        "MRK": 10,
+        "PG": 9,
+        "KO": 6,
+        "WMT": 5
+      },
+      "trades_by_regime": {
+        "bull": 726,
+        "bear": 195
+      }
+    },
+    "F": {
+      "name": "Composite (2+ signals)",
+      "n_trades": 384,
+      "best_horizon": 5,
+      "validation": {
+        "sharpe": {
+          "value": 0.872,
+          "threshold": 0.5,
+          "passed": "True"
+        },
+        "permutation": {
+          "value": 0.715,
+          "threshold": 0.05,
+          "passed": "False"
+        },
+        "regime_gap": {
+          "value": 0.624,
+          "threshold": 0.5,
+          "passed": "False",
+          "bull_sharpe": 0.557,
+          "bear_sharpe": 1.483,
+          "bull_n": 270,
+          "bear_n": 114
+        },
+        "mdd": {
+          "value": -0.3969,
+          "threshold": -0.3,
+          "passed": "False"
+        },
+        "min_trades": {
+          "value": 384,
+          "threshold": 30,
+          "passed": true
+        },
+        "all_passed": false
+      },
+      "options": {
+        "5": {
+          "stock_mean_ret": 0.615,
+          "stock_wr": 52.1,
+          "stock_median_ret": 0.153,
+          "options_mean_ret_pct_of_premium": 16.8,
+          "options_wr": 37.8,
+          "options_sharpe": 0.923,
+          "theta_drag_pct": 1.5,
+          "estimated_premium_pct": 2.87,
+          "beats_theta_and_spread": "True"
+        },
+        "10": {
+          "stock_mean_ret": 0.715,
+          "stock_wr": 52.6,
+          "stock_median_ret": 0.503,
+          "options_mean_ret_pct_of_premium": 25.2,
+          "options_wr": 38.7,
+          "options_sharpe": 0.715,
+          "theta_drag_pct": 3.0,
+          "estimated_premium_pct": 2.87,
+          "beats_theta_and_spread": "True"
+        },
+        "21": {
+          "stock_mean_ret": 1.849,
+          "stock_wr": 56.6,
+          "stock_median_ret": 1.203,
+          "options_mean_ret_pct_of_premium": 41.4,
+          "options_wr": 40.7,
+          "options_sharpe": 0.695,
+          "theta_drag_pct": 6.3,
+          "estimated_premium_pct": 2.87,
+          "beats_theta_and_spread": "True"
+        }
+      },
+      "passed": false,
+      "trades_by_ticker": {
+        "MSFT": 34,
+        "AAPL": 33,
+        "JNJ": 28,
+        "COST": 26,
+        "HD": 26,
+        "MA": 24,
+        "NVDA": 24,
+        "AVGO": 19,
+        "GOOGL": 18,
+        "META": 18,
+        "AMZN": 16,
+        "PEP": 16,
+        "ABBV": 15,
+        "MRK": 14,
+        "LLY": 14,
+        "JPM": 13,
+        "WMT": 13,
+        "V": 11,
+        "UNH": 11,
+        "PG": 9,
+        "KO": 2
+      },
+      "trades_by_regime": {
+        "bull": 270,
+        "bear": 114
+      }
+    }
+  }
+}

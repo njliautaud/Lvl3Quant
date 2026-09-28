@@ -1,0 +1,145 @@
+{
+  "name": "Sector ETF Options V9 Production",
+  "version": "9.0",
+  "last_validated": "2026-07-27",
+  "validation_experiments": {
+    "v8_baseline": "v8_real_pricing_backtest_v1 (MLflow exp 219)",
+    "bull_only_test": "v8_bull_only_filtered_v1 (MLflow exp 221)",
+    "fixed_width_test": "v8_fixed_width_spreads_v1 (MLflow exp 222)",
+    "v9_candidate": "v9_candidate_v1 (MLflow exp 223)"
+  },
+
+  "strategy": {
+    "type": "sector_etf_options_spread",
+    "universe": ["XLK", "XLF", "XLE", "XLV", "XLY", "XLP", "XLI", "XLB", "XLU", "XLRE", "XLC"],
+    "n_sectors": 11,
+    "top_k_long": 3,
+    "bottom_k_short": 3,
+    "trade_structure": {
+      "bull": "bull_call_spread",
+      "bear": "bear_put_spread"
+    }
+  },
+
+  "parameters": {
+    "dte": 14,
+    "otm_pct": 2.0,
+    "spread_width": {
+      "mode": "adaptive",
+      "min_dollar_width": 3.0,
+      "pct_width": 3.0,
+      "formula": "max($3, strike * 3%)",
+      "rationale": "KB #235: Fixed $3 minimum ensures cheap stocks ($30) get viable widths instead of $0.90 from pure %. Expensive stocks ($200) naturally get $6 from 3%. Eliminates ~90% of cost/width problems structurally."
+    },
+    "rebalance_freq": "W-FRI",
+    "hold_to_expiry": true,
+    "entry_haircut_pct": 15.0,
+    "exit_haircut_pct": 0.0,
+    "commission_rt_spread": 2.60,
+    "max_position_pct": 40.0
+  },
+
+  "regime_rules": {
+    "vix_low_threshold": 20.0,
+    "low_vix_mode": "pairs (bull + bear)",
+    "high_vix_mode": "bull_only",
+    "regime_filter": "GRU score > 0.4 (or VIX proxy if unavailable)"
+  },
+
+  "cost_width_gate": {
+    "enabled": true,
+    "max_cost_width_ratio": 0.50,
+    "rationale": "KB #233: Rejects trades where entry cost > 50% of spread width. Combined with adaptive width, this catches the remaining edge cases."
+  },
+
+  "ml_model": {
+    "type": "LightGBM",
+    "n_estimators": 100,
+    "max_depth": 4,
+    "learning_rate": 0.05,
+    "subsample": 0.8,
+    "colsample_bytree": 0.8,
+    "min_child_samples": 5,
+    "walk_forward_train_periods": 12,
+    "walk_forward_mode": "sliding"
+  },
+
+  "features": {
+    "count": 17,
+    "feature_set": "v6",
+    "list": [
+      "ret_5d", "ret_10d", "ret_21d", "ret_63d", "ret_126d", "ret_252d",
+      "sharpe_63d", "pct_52w_high", "mom_accel",
+      "pct_pos_months_12m", "sortino_63d", "calmar_1y", "up_capture",
+      "trend_r2_63d", "trend_slope_63d",
+      "sector_spy_beta_63d", "cross_sector_dispersion"
+    ],
+    "top_importance": ["sector_spy_beta_63d", "up_capture", "ret_126d", "ret_10d", "trend_r2_63d"]
+  },
+
+  "performance": {
+    "v9_core_full_period": {
+      "sharpe": 2.17,
+      "sortino": 65.18,
+      "win_rate": 0.444,
+      "profit_factor": 4.80,
+      "max_dd": -0.059,
+      "gates_passed": "5/5",
+      "final_equity_from_645": 36620,
+      "n_trades": 1146
+    },
+    "v9_core_chain_only_2019_plus": {
+      "sharpe": 3.50,
+      "win_rate": 0.462,
+      "total_pnl": 25446,
+      "pct_real_priced": 29,
+      "gates_passed": "5/5"
+    },
+    "v8_comparison_chain_only": {
+      "v8_sharpe": 3.17,
+      "v9_sharpe": 3.50,
+      "improvement_pct": 10.4,
+      "v8_final": 23067,
+      "v9_final": 36620,
+      "improvement_final_pct": 58.8
+    },
+    "structural_edge": {
+      "random_mean_sharpe": 2.06,
+      "ml_alpha_ratio": 1.05,
+      "pct_structural": 95,
+      "note": "~95% structural edge (pairs + VIX regime + DTE leverage + adaptive width), ~5% from ML"
+    },
+    "v9_vs_v8_changes": [
+      "Spread width: 3% fixed → adaptive max($3, 3%)",
+      "Cost/width filter: added < 50% gate",
+      "Chain-only Sharpe: 3.17 → 3.50 (+10%)",
+      "Final equity: $23K → $37K (+59%)",
+      "Max drawdown: -6.7% → -5.9% (improved)",
+      "ML alpha: 1.14x → 1.05x (adaptive width benefits random too)"
+    ]
+  },
+
+  "capital": {
+    "starting": 645,
+    "account": "agentic_options",
+    "broker": "Robinhood (planned)"
+  },
+
+  "paper_engine": {
+    "pm2_id": 109,
+    "pm2_name": "sector-v9-paper",
+    "cron": "30 16 * * 1-5",
+    "script": "paper_engines/sector_combined_v9_paper.py",
+    "deployed": "2026-07-27",
+    "ab_test_vs": "V8 (PM2 106)"
+  },
+
+  "notes": [
+    "V9 key innovation: adaptive spread width max($3, 3%) structurally fixes cost/width problem",
+    "Bull-only mode has higher chain-only Sharpe (3.79) but fails regime balance gate (4/5)",
+    "21d DTE has highest Sharpe (4.77) but only 1% real-priced — unreliable",
+    "Bear side is weak with real pricing — most edge on bull side",
+    "XLE bull spread went from $2 width (V8) to $3 width (V9) — key improvement for cheap stocks",
+    "2026 remains weakest year regardless of variant — bear put spread edge degraded"
+  ]
+}

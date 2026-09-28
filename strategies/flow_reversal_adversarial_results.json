@@ -1,0 +1,94 @@
+{
+  "run_date": "2026-08-26T19:14:58.273885",
+  "strategy": "flow_reversal",
+  "baseline": {
+    "sharpe": 0.04010515339687604,
+    "sortino": 0.027584113692674325,
+    "cagr": -0.0014162868625772207,
+    "max_dd": -0.3303375768361955,
+    "pf": 1.0161771298562245,
+    "wr": 0.5064599483204134,
+    "n_trades": 387
+  },
+  "gates": {
+    "Gate 1: Re-implementation": "PASS",
+    "Gate 2: Inverse signal": "PASS",
+    "Gate 3: Random timing": "FAIL",
+    "Gate 4: Cost sensitivity": "FAIL",
+    "Gate 5: Sub-period stability": "FAIL",
+    "Gate 6: Parameter robustness": "FAIL"
+  },
+  "n_pass": 2,
+  "n_total": 6,
+  "verdict": "WEAK - strategy has significant concerns",
+  "gate_details": {
+    "gate1_reimpl_sharpe": 0.0021532836712130133,
+    "gate1_sharpe_diff": 0.03795186972566302,
+    "gate2_inverse_sharpe": -0.12621891678596542,
+    "gate2_inverse_trades": 22,
+    "gate3_percentile": 68.0,
+    "gate3_p95": 0.3803032728203214,
+    "gate4_cost_results": {
+      "0": {
+        "sharpe": 0.5220501891572248,
+        "cagr": 0.05067479986752277,
+        "pf": 1.2416197796007171,
+        "trades": 387
+      },
+      "10": {
+        "sharpe": 0.04010515339687604,
+        "cagr": -0.0014162868625772207,
+        "pf": 1.0161771298562245,
+        "trades": 387
+      },
+      "20": {
+        "sharpe": -0.4317726076532475,
+        "cagr": -0.05097115460695578,
+        "pf": 0.8452297533535699,
+        "trades": 387
+      },
+      "50": {
+        "sharpe": -1.750465993285646,
+        "cagr": -0.1856026698991856,
+        "pf": 0.5205463222079103,
+        "trades": 387
+      }
+    },
+    "gate5_sub_periods": [
+      {
+        "period": "2019-01 to 2020-11",
+        "sharpe": 0.16754570201123034,
+        "cagr": 0.013065950138261062,
+        "cum_return": 0.025034568124999934,
+        "trades": 90,
+        "days": 480
+      },
+      {
+        "period": "2020-11 to 2022-10",
+        "sharpe": -0.43233872775961757,
+        "cagr": -0.047456828812552865,
+        "cum_return": -0.08845036855682953,
+        "trades": 98,
+        "days": 480
+      },
+      {
+        "period": "2022-10 to 2024-09",
+        "sharpe": -0.3180780466249522,
+        "cagr": -0.03409055228342861,
+        "cum_return": -0.06393187860111926,
+        "trades": 99,
+        "days": 480
+      },
+      {
+        "period": "2024-09 to 2026-08",
+        "sharpe": 0.6605291927083768,
+        "cagr": 0.06649800742149181,
+        "cum_return": 0.13104306224528717,
+        "trades": 100,
+        "days": 482
+      }
+    ],
+    "gate6_pct_above_threshold": 5.208333333333334,
+    "gate6_grid_mean_sharpe": 0.05992911598002962
+  }
+}

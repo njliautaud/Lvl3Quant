@@ -1,0 +1,108 @@
+{
+  "model": "cnn_mamba_v2",
+  "model_dir": "/home/jupiter/Lvl3Quant/output/cnn_mamba_v2_smart_v3_mar",
+  "strategy_name": "tp9_z2.5_chase2_5repr_sl15_volexit5_5b_60shold_prime_conv20_0.5",
+  "validation_dates": [
+    "20260223",
+    "20260224",
+    "20260225",
+    "20260226",
+    "20260227",
+    "20260302",
+    "20260303",
+    "20260304",
+    "20260305"
+  ],
+  "n_dates": 9,
+  "n_trades": 339,
+  "n_signals": 929,
+  "fill_rate": null,
+  "total_pnl_dollars": 3581.7000000000116,
+  "win_rate": 0.5899705014749262,
+  "profit_factor": 1.2259277248270084,
+  "pnl_per_trade": 10.565486725663751,
+  "sharpe_per_trade": 0.10794469944023605,
+  "n_pos_days": 5,
+  "n_neg_days": 4,
+  "daily_pnl_std": 1161.5390628147004,
+  "daily_sharpe": 0.3426201316917357,
+  "cli_args": [
+    "--chase-entry",
+    "--chase-max-ticks",
+    "2",
+    "--chase-max-reprices",
+    "5",
+    "--stop-loss-ticks",
+    "15",
+    "--vol-exit-ticks",
+    "5",
+    "--vol-exit-bars",
+    "5",
+    "--latency-ms",
+    "5",
+    "--prime-hours",
+    "--hold-ms",
+    "60000",
+    "--conviction-exit-bars",
+    "20",
+    "--conviction-exit-mag",
+    "0.5",
+    "--take-profit-ticks",
+    "9",
+    "--signal-threshold",
+    "2.5"
+  ],
+  "pred_cache_dir": "/home/jupiter/Lvl3Quant/execution/results/fifo_validation/pred_cache/cnn_mamba_v2/",
+  "binary": "/home/jupiter/Lvl3Quant/rust_cache_builder/target/release/fill_sim_cli",
+  "notes": "best PF. Concentration risk: Mar 3 alone contributed ~$3,100 across most cells. Sortino + bootstrap CI not yet computed \u2014 this is sharpe_per_trade only. Source sweep: sim_tp_z_finegrain_9day_20260427_101143.",
+  "qualifies_for_paper_trading": false,
+  "status": "candidate",
+  "saved_at": "2026-04-27T14:15:00",
+  "risk_metrics": {
+    "computed_at": "2026-04-27T20:35:00.850600Z",
+    "n_trades": 339,
+    "n_days": 9,
+    "sortino_per_trade": {
+      "point": 0.13589447716781083,
+      "downside_deviation_dollars": 77.74772710311704
+    },
+    "sortino_daily": {
+      "point": 1.3097673144730428
+    },
+    "max_daily_drawdown_dollars": 934.8999999999999,
+    "daily_pnl": [
+      790.2499999999991,
+      607.3500000000001,
+      84.30000000000001,
+      -373.5499999999999,
+      -198.45,
+      -362.89999999999986,
+      3329.8000000000125,
+      602.6999999999998,
+      -897.8
+    ],
+    "bootstrap": {
+      "sortino_per_trade": {
+        "p5": -0.07784816447585813,
+        "p50": 0.13764883448856724,
+        "p95": 0.29581348085279197
+      },
+      "sortino_daily": {
+        "p5": -0.6862988339847599,
+        "p50": 1.5110313785992644,
+        "p95": 99.0
+      },
+      "total_pnl_dollars": {
+        "p5": -1605.5975000000005,
+        "p50": 3294.2250000000113,
+        "p95": 9898.942500000037
+      },
+      "win_rate": {
+        "p5": 0.5056179775280899,
+        "p50": 0.5857301940820872,
+        "p95": 0.6510342570221497
+      },
+      "n_bootstrap": 5000
+    }
+  }
+}

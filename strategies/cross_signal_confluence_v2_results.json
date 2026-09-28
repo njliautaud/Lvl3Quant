@@ -1,0 +1,562 @@
+{
+  "P1_RSI_Div+BondYield": {
+    "metrics": {
+      "n_trades": 109,
+      "wr": 0.4495,
+      "pf": 0.8395,
+      "sharpe": -0.1435,
+      "sortino": -0.0816,
+      "mdd": -0.0583,
+      "total_return": -0.0263,
+      "avg_return": -0.0051,
+      "bull_sharpe": -0.2376,
+      "bear_sharpe": -0.3858,
+      "regime_gap": 0.3841,
+      "bull_trades": 57,
+      "bear_trades": 52
+    },
+    "perm_p": 0.0,
+    "gate_result": {
+      "pass": false,
+      "gates": {
+        "G1_sharpe": false,
+        "G2_perm": true,
+        "G3_regime": true,
+        "G4_mdd": true,
+        "G5_trades": true
+      }
+    }
+  },
+  "P2_RSI_Div+IV_RV_Gap": {
+    "metrics": {
+      "n_trades": 37,
+      "wr": 0.2973,
+      "pf": 0.28,
+      "sharpe": -0.4542,
+      "sortino": -0.1485,
+      "mdd": -0.0587,
+      "total_return": -0.0567,
+      "avg_return": -0.0342,
+      "bull_sharpe": 0.4158,
+      "bear_sharpe": -2.4383,
+      "regime_gap": 1.1705,
+      "bull_trades": 10,
+      "bear_trades": 27
+    },
+    "perm_p": 0.0,
+    "gate_result": {
+      "pass": false,
+      "gates": {
+        "G1_sharpe": false,
+        "G2_perm": true,
+        "G3_regime": false,
+        "G4_mdd": true,
+        "G5_trades": true
+      }
+    }
+  },
+  "P3_RSI_Div+MultiTF": {
+    "metrics": {
+      "n_trades": 206,
+      "wr": 0.4417,
+      "pf": 0.5847,
+      "sharpe": -0.6346,
+      "sortino": -0.4874,
+      "mdd": -0.1253,
+      "total_return": -0.1182,
+      "avg_return": -0.013,
+      "bull_sharpe": -0.6218,
+      "bear_sharpe": -1.3582,
+      "regime_gap": 0.5422,
+      "bull_trades": 126,
+      "bear_trades": 80
+    },
+    "perm_p": 0.0,
+    "gate_result": {
+      "pass": false,
+      "gates": {
+        "G1_sharpe": false,
+        "G2_perm": true,
+        "G3_regime": false,
+        "G4_mdd": true,
+        "G5_trades": true
+      }
+    }
+  },
+  "P4_RSI_Div+Liquidity": {
+    "metrics": {
+      "n_trades": 456,
+      "wr": 0.4583,
+      "pf": 0.8082,
+      "sharpe": -0.4662,
+      "sortino": -0.5017,
+      "mdd": -0.104,
+      "total_return": -0.0829,
+      "avg_return": -0.0039,
+      "bull_sharpe": -0.3108,
+      "bear_sharpe": -0.5695,
+      "regime_gap": 0.4543,
+      "bull_trades": 346,
+      "bear_trades": 110
+    },
+    "perm_p": 1.0,
+    "gate_result": {
+      "pass": false,
+      "gates": {
+        "G1_sharpe": false,
+        "G2_perm": false,
+        "G3_regime": true,
+        "G4_mdd": true,
+        "G5_trades": true
+      }
+    }
+  },
+  "P5_BondYield+IV_RV_Gap": {
+    "metrics": {
+      "n_trades": 45,
+      "wr": 0.3556,
+      "pf": 0.2758,
+      "sharpe": -0.4702,
+      "sortino": -0.1441,
+      "mdd": -0.0862,
+      "total_return": -0.0699,
+      "avg_return": -0.0352,
+      "bull_sharpe": 0.0601,
+      "bear_sharpe": -2.9683,
+      "regime_gap": 1.0202,
+      "bull_trades": 14,
+      "bear_trades": 31
+    },
+    "perm_p": 0.0,
+    "gate_result": {
+      "pass": false,
+      "gates": {
+        "G1_sharpe": false,
+        "G2_perm": true,
+        "G3_regime": false,
+        "G4_mdd": true,
+        "G5_trades": true
+      }
+    }
+  },
+  "P6_BondYield+MultiTF": {
+    "metrics": {
+      "n_trades": 195,
+      "wr": 0.5026,
+      "pf": 0.8664,
+      "sharpe": -0.1276,
+      "sortino": -0.0821,
+      "mdd": -0.0658,
+      "total_return": -0.0353,
+      "avg_return": -0.004,
+      "bull_sharpe": -0.22,
+      "bear_sharpe": -0.3077,
+      "regime_gap": 0.285,
+      "bull_trades": 121,
+      "bear_trades": 74
+    },
+    "perm_p": 0.0,
+    "gate_result": {
+      "pass": false,
+      "gates": {
+        "G1_sharpe": false,
+        "G2_perm": true,
+        "G3_regime": true,
+        "G4_mdd": true,
+        "G5_trades": true
+      }
+    }
+  },
+  "P7_BondYield+Liquidity": {
+    "metrics": {
+      "n_trades": 226,
+      "wr": 0.5575,
+      "pf": 1.3123,
+      "sharpe": 0.3081,
+      "sortino": 0.2229,
+      "mdd": -0.058,
+      "total_return": 0.0645,
+      "avg_return": 0.0061,
+      "bull_sharpe": 0.1933,
+      "bear_sharpe": 0.9606,
+      "regime_gap": 0.7988,
+      "bull_trades": 148,
+      "bear_trades": 78
+    },
+    "perm_p": 1.0,
+    "gate_result": {
+      "pass": false,
+      "gates": {
+        "G1_sharpe": false,
+        "G2_perm": false,
+        "G3_regime": false,
+        "G4_mdd": true,
+        "G5_trades": true
+      }
+    }
+  },
+  "P8_IV_RV_Gap+MultiTF": {
+    "metrics": {
+      "n_trades": 90,
+      "wr": 0.4889,
+      "pf": 0.767,
+      "sharpe": -0.1455,
+      "sortino": -0.0601,
+      "mdd": -0.0661,
+      "total_return": -0.0256,
+      "avg_return": -0.0059,
+      "bull_sharpe": 1.5999,
+      "bear_sharpe": -1.4419,
+      "regime_gap": 1.9012,
+      "bull_trades": 45,
+      "bear_trades": 45
+    },
+    "perm_p": 0.0,
+    "gate_result": {
+      "pass": false,
+      "gates": {
+        "G1_sharpe": false,
+        "G2_perm": true,
+        "G3_regime": false,
+        "G4_mdd": true,
+        "G5_trades": true
+      }
+    }
+  },
+  "P9_IV_RV_Gap+Liquidity": {
+    "metrics": {
+      "n_trades": 91,
+      "wr": 0.5385,
+      "pf": 1.8622,
+      "sharpe": 0.4749,
+      "sortino": 0.2972,
+      "mdd": -0.015,
+      "total_return": 0.043,
+      "avg_return": 0.0102,
+      "bull_sharpe": 1.1677,
+      "bear_sharpe": 1.1506,
+      "regime_gap": 0.0146,
+      "bull_trades": 48,
+      "bear_trades": 43
+    },
+    "perm_p": 1.0,
+    "gate_result": {
+      "pass": false,
+      "gates": {
+        "G1_sharpe": false,
+        "G2_perm": false,
+        "G3_regime": true,
+        "G4_mdd": true,
+        "G5_trades": true
+      }
+    }
+  },
+  "P10_MultiTF+Liquidity": {
+    "metrics": {
+      "n_trades": 482,
+      "wr": 0.5124,
+      "pf": 0.9006,
+      "sharpe": -0.184,
+      "sortino": -0.201,
+      "mdd": -0.1329,
+      "total_return": -0.0462,
+      "avg_return": -0.0022,
+      "bull_sharpe": -0.2722,
+      "bear_sharpe": -0.0679,
+      "regime_gap": 0.7507,
+      "bull_trades": 342,
+      "bear_trades": 140
+    },
+    "perm_p": 0.0,
+    "gate_result": {
+      "pass": false,
+      "gates": {
+        "G1_sharpe": false,
+        "G2_perm": true,
+        "G3_regime": false,
+        "G4_mdd": true,
+        "G5_trades": true
+      }
+    }
+  },
+  "T1_RSI_Div+BondYield+IV_RV_Gap_any2": {
+    "metrics": {
+      "n_trades": 138,
+      "wr": 0.3986,
+      "pf": 0.6826,
+      "sharpe": -0.3021,
+      "sortino": -0.1867,
+      "mdd": -0.0732,
+      "total_return": -0.0581,
+      "avg_return": -0.0098,
+      "bull_sharpe": -0.692,
+      "bear_sharpe": -0.7572,
+      "regime_gap": 0.0861,
+      "bull_trades": 70,
+      "bear_trades": 68
+    },
+    "perm_p": 0.0,
+    "gate_result": {
+      "pass": false,
+      "gates": {
+        "G1_sharpe": false,
+        "G2_perm": true,
+        "G3_regime": true,
+        "G4_mdd": true,
+        "G5_trades": true
+      }
+    }
+  },
+  "T2_RSI_Div+BondYield+MultiTF_any2": {
+    "metrics": {
+      "n_trades": 338,
+      "wr": 0.4763,
+      "pf": 0.7363,
+      "sharpe": -0.4385,
+      "sortino": -0.3938,
+      "mdd": -0.1187,
+      "total_return": -0.1074,
+      "avg_return": -0.0072,
+      "bull_sharpe": -0.4428,
+      "bear_sharpe": -0.7637,
+      "regime_gap": 0.4201,
+      "bull_trades": 222,
+      "bear_trades": 116
+    },
+    "perm_p": 0.0,
+    "gate_result": {
+      "pass": false,
+      "gates": {
+        "G1_sharpe": false,
+        "G2_perm": true,
+        "G3_regime": true,
+        "G4_mdd": true,
+        "G5_trades": true
+      }
+    }
+  },
+  "T3_RSI_Div+BondYield+Liquidity_any2": {
+    "metrics": {
+      "n_trades": 568,
+      "wr": 0.4859,
+      "pf": 0.8797,
+      "sharpe": -0.2727,
+      "sortino": -0.3006,
+      "mdd": -0.0866,
+      "total_return": -0.0733,
+      "avg_return": -0.0026,
+      "bull_sharpe": -0.2338,
+      "bear_sharpe": -0.2189,
+      "regime_gap": 0.0638,
+      "bull_trades": 418,
+      "bear_trades": 150
+    },
+    "perm_p": 1.0,
+    "gate_result": {
+      "pass": false,
+      "gates": {
+        "G1_sharpe": false,
+        "G2_perm": false,
+        "G3_regime": true,
+        "G4_mdd": true,
+        "G5_trades": true
+      }
+    }
+  },
+  "T4_RSI_Div+IV_RV_Gap+MultiTF_any2": {
+    "metrics": {
+      "n_trades": 254,
+      "wr": 0.4331,
+      "pf": 0.61,
+      "sharpe": -0.6414,
+      "sortino": -0.4916,
+      "mdd": -0.1388,
+      "total_return": -0.1273,
+      "avg_return": -0.0114,
+      "bull_sharpe": -0.6016,
+      "bear_sharpe": -1.2261,
+      "regime_gap": 0.5093,
+      "bull_trades": 162,
+      "bear_trades": 92
+    },
+    "perm_p": 0.0,
+    "gate_result": {
+      "pass": false,
+      "gates": {
+        "G1_sharpe": false,
+        "G2_perm": true,
+        "G3_regime": false,
+        "G4_mdd": true,
+        "G5_trades": true
+      }
+    }
+  },
+  "T5_RSI_Div+IV_RV_Gap+Liquidity_any2": {
+    "metrics": {
+      "n_trades": 492,
+      "wr": 0.4675,
+      "pf": 0.8166,
+      "sharpe": -0.4265,
+      "sortino": -0.4467,
+      "mdd": -0.1059,
+      "total_return": -0.0903,
+      "avg_return": -0.0038,
+      "bull_sharpe": -0.2886,
+      "bear_sharpe": -0.4894,
+      "regime_gap": 0.4104,
+      "bull_trades": 362,
+      "bear_trades": 130
+    },
+    "perm_p": 1.0,
+    "gate_result": {
+      "pass": false,
+      "gates": {
+        "G1_sharpe": false,
+        "G2_perm": false,
+        "G3_regime": true,
+        "G4_mdd": true,
+        "G5_trades": true
+      }
+    }
+  },
+  "T6_RSI_Div+MultiTF+Liquidity_any2": {
+    "metrics": {
+      "n_trades": 662,
+      "wr": 0.5045,
+      "pf": 0.9046,
+      "sharpe": -0.236,
+      "sortino": -0.2742,
+      "mdd": -0.0864,
+      "total_return": -0.0684,
+      "avg_return": -0.002,
+      "bull_sharpe": -0.0641,
+      "bear_sharpe": -0.3944,
+      "regime_gap": 0.8373,
+      "bull_trades": 486,
+      "bear_trades": 176
+    },
+    "perm_p": 1.0,
+    "gate_result": {
+      "pass": false,
+      "gates": {
+        "G1_sharpe": false,
+        "G2_perm": false,
+        "G3_regime": false,
+        "G4_mdd": true,
+        "G5_trades": true
+      }
+    }
+  },
+  "T7_BondYield+IV_RV_Gap+MultiTF_any2": {
+    "metrics": {
+      "n_trades": 239,
+      "wr": 0.5063,
+      "pf": 0.9514,
+      "sharpe": -0.0364,
+      "sortino": -0.0269,
+      "mdd": -0.0739,
+      "total_return": -0.0131,
+      "avg_return": -0.0013,
+      "bull_sharpe": -0.1153,
+      "bear_sharpe": -0.0645,
+      "regime_gap": 0.4409,
+      "bull_trades": 150,
+      "bear_trades": 89
+    },
+    "perm_p": 0.0,
+    "gate_result": {
+      "pass": false,
+      "gates": {
+        "G1_sharpe": false,
+        "G2_perm": true,
+        "G3_regime": true,
+        "G4_mdd": true,
+        "G5_trades": true
+      }
+    }
+  },
+  "T8_BondYield+IV_RV_Gap+Liquidity_any2": {
+    "metrics": {
+      "n_trades": 290,
+      "wr": 0.5345,
+      "pf": 1.0774,
+      "sharpe": 0.1077,
+      "sortino": 0.0871,
+      "mdd": -0.0687,
+      "total_return": 0.0218,
+      "avg_return": 0.0016,
+      "bull_sharpe": 0.0523,
+      "bear_sharpe": 0.2235,
+      "regime_gap": 0.7658,
+      "bull_trades": 183,
+      "bear_trades": 107
+    },
+    "perm_p": 1.0,
+    "gate_result": {
+      "pass": false,
+      "gates": {
+        "G1_sharpe": false,
+        "G2_perm": false,
+        "G3_regime": false,
+        "G4_mdd": true,
+        "G5_trades": true
+      }
+    }
+  },
+  "T9_BondYield+MultiTF+Liquidity_any2": {
+    "metrics": {
+      "n_trades": 555,
+      "wr": 0.5009,
+      "pf": 0.8886,
+      "sharpe": -0.2236,
+      "sortino": -0.2472,
+      "mdd": -0.1316,
+      "total_return": -0.071,
+      "avg_return": -0.0028,
+      "bull_sharpe": -0.3275,
+      "bear_sharpe": -0.0738,
+      "regime_gap": 0.7745,
+      "bull_trades": 387,
+      "bear_trades": 168
+    },
+    "perm_p": 1.0,
+    "gate_result": {
+      "pass": false,
+      "gates": {
+        "G1_sharpe": false,
+        "G2_perm": false,
+        "G3_regime": false,
+        "G4_mdd": true,
+        "G5_trades": true
+      }
+    }
+  },
+  "T10_IV_RV_Gap+MultiTF+Liquidity_any2": {
+    "metrics": {
+      "n_trades": 499,
+      "wr": 0.503,
+      "pf": 0.8414,
+      "sharpe": -0.3033,
+      "sortino": -0.3023,
+      "mdd": -0.1099,
+      "total_return": -0.0832,
+      "avg_return": -0.0038,
+      "bull_sharpe": -0.331,
+      "bear_sharpe": -0.3208,
+      "regime_gap": 0.031,
+      "bull_trades": 345,
+      "bear_trades": 154
+    },
+    "perm_p": 0.0,
+    "gate_result": {
+      "pass": false,
+      "gates": {
+        "G1_sharpe": false,
+        "G2_perm": true,
+        "G3_regime": true,
+        "G4_mdd": true,
+        "G5_trades": true
+      }
+    }
+  }
+}

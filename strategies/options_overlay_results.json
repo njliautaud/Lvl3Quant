@@ -1,0 +1,45 @@
+{
+  "options": {
+    "label": "OPTIONS OVERLAY (Calls, delta ~0.50)",
+    "total_return": 6.0988142542024875,
+    "cagr": 0.34372439403197674,
+    "sharpe": 1.0257177759288678,
+    "sortino": 1.2465844142410052,
+    "max_dd": -0.3649126087512635,
+    "win_rate": 0.428169014084507,
+    "profit_factor": 1.4827297904378554,
+    "avg_return_per_trade": 0.10860174670355496,
+    "avg_win": 1232.422819275735,
+    "avg_loss": -622.3651526496891,
+    "num_trades": 355,
+    "avg_days_held": 4.833802816901408,
+    "final_equity": 70988.14254202487
+  },
+  "shares": {
+    "label": "SHARES ONLY (Same Signals)",
+    "total_return": 0.21787720222473145,
+    "cagr": 0.03015866131005729,
+    "sharpe": 0.7462284952638255,
+    "sortino": 0.6335062325661851,
+    "max_dd": -0.05868249388410517,
+    "win_rate": 0.5629139072847682,
+    "profit_factor": 1.4220963466065024,
+    "avg_return_per_trade": 0.005201527079600008,
+    "avg_win": 43.17976714302512,
+    "avg_loss": -39.10445751565875,
+    "num_trades": 302,
+    "avg_days_held": 6.344370860927152,
+    "final_equity": 12178.772022247314
+  },
+  "config": {
+    "initial_capital": 10000.0,
+    "dte_target": 37,
+    "target_delta": 0.5,
+    "max_alloc_per_trade": 0.07,
+    "underlying_tp": 0.03,
+    "option_sl": -0.5,
+    "theta_exit_dte": 21,
+    "trailing_stop": 0.25
+  },
+  "run_date": "2026-08-26T23:26:54.249291"
+}

@@ -1,0 +1,155 @@
+{
+  "_description": "Sector-relative IV baselines for options timing. Updated from historical IV distributions. IV rank thresholds are sector-specific because tech naturally runs higher IV than utilities/staples.",
+  "_updated": "2026-08-06",
+  "_methodology": "Baselines derived from 252-day rolling IV distributions per sector ETF and constituent stocks. 'expensive_rank' is the IV rank level that is genuinely elevated FOR THAT SECTOR (not a flat 70% cutoff). 'cheap_rank' is where IV is genuinely cheap for that sector.",
+  "sectors": {
+    "XLK": {
+      "name": "Technology",
+      "etf": "XLK",
+      "typical_iv_range": [25, 50],
+      "median_iv": 34.0,
+      "iv_p25": 27.0,
+      "iv_p75": 45.0,
+      "cheap_rank": 25,
+      "expensive_rank": 80,
+      "notes": "Tech naturally runs high IV due to growth/momentum. IV rank 65% is normal, not expensive. Only penalize above 80%."
+    },
+    "XLV": {
+      "name": "Healthcare",
+      "etf": "XLV",
+      "typical_iv_range": [15, 30],
+      "median_iv": 20.0,
+      "iv_p25": 16.0,
+      "iv_p75": 26.0,
+      "cheap_rank": 25,
+      "expensive_rank": 65,
+      "notes": "Healthcare is defensive with moderate IV. Rank above 65% is genuinely elevated."
+    },
+    "XLF": {
+      "name": "Financials",
+      "etf": "XLF",
+      "typical_iv_range": [12, 25],
+      "median_iv": 17.0,
+      "iv_p25": 14.0,
+      "iv_p75": 22.0,
+      "cheap_rank": 20,
+      "expensive_rank": 60,
+      "notes": "Financials are low-vol. IV rank 60% is already expensive for this sector."
+    },
+    "XLE": {
+      "name": "Energy",
+      "etf": "XLE",
+      "typical_iv_range": [20, 35],
+      "median_iv": 27.0,
+      "iv_p25": 22.0,
+      "iv_p75": 33.0,
+      "cheap_rank": 25,
+      "expensive_rank": 70,
+      "notes": "Energy has commodity-driven vol spikes. Moderate baseline."
+    },
+    "XLU": {
+      "name": "Utilities",
+      "etf": "XLU",
+      "typical_iv_range": [12, 22],
+      "median_iv": 16.0,
+      "iv_p25": 13.0,
+      "iv_p75": 20.0,
+      "cheap_rank": 20,
+      "expensive_rank": 55,
+      "notes": "Utilities are the lowest-vol sector. IV rank 55% is already elevated. Current IV=46 is unusually high due to rate environment."
+    },
+    "XLP": {
+      "name": "Consumer Staples",
+      "etf": "XLP",
+      "typical_iv_range": [10, 20],
+      "median_iv": 14.0,
+      "iv_p25": 11.0,
+      "iv_p75": 18.0,
+      "cheap_rank": 20,
+      "expensive_rank": 55,
+      "notes": "Staples are very low-vol defensive. Similar to utilities — low threshold for expensive."
+    },
+    "XLY": {
+      "name": "Consumer Discretionary",
+      "etf": "XLY",
+      "typical_iv_range": [18, 35],
+      "median_iv": 24.0,
+      "iv_p25": 19.0,
+      "iv_p75": 32.0,
+      "cheap_rank": 25,
+      "expensive_rank": 70,
+      "notes": "Discretionary has moderate-high vol due to AMZN/TSLA weighting. Tolerates higher IV rank."
+    },
+    "XLI": {
+      "name": "Industrials",
+      "etf": "XLI",
+      "typical_iv_range": [14, 28],
+      "median_iv": 20.0,
+      "iv_p25": 16.0,
+      "iv_p75": 25.0,
+      "cheap_rank": 25,
+      "expensive_rank": 65,
+      "notes": "Industrials are mid-vol cyclicals."
+    },
+    "XLB": {
+      "name": "Materials",
+      "etf": "XLB",
+      "typical_iv_range": [16, 32],
+      "median_iv": 22.0,
+      "iv_p25": 17.0,
+      "iv_p75": 28.0,
+      "cheap_rank": 25,
+      "expensive_rank": 65,
+      "notes": "Materials are commodity-sensitive cyclicals, moderate vol."
+    },
+    "XLRE": {
+      "name": "Real Estate",
+      "etf": "XLRE",
+      "typical_iv_range": [12, 25],
+      "median_iv": 17.0,
+      "iv_p25": 14.0,
+      "iv_p75": 22.0,
+      "cheap_rank": 20,
+      "expensive_rank": 60,
+      "notes": "Real estate is rate-sensitive with low baseline vol."
+    },
+    "XLC": {
+      "name": "Communication Services",
+      "etf": "XLC",
+      "typical_iv_range": [18, 35],
+      "median_iv": 24.0,
+      "iv_p25": 19.0,
+      "iv_p75": 32.0,
+      "cheap_rank": 25,
+      "expensive_rank": 70,
+      "notes": "Communication dominated by META/GOOG — moderate-high vol profile similar to tech-lite."
+    }
+  },
+  "ticker_to_sector": {
+    "AAPL": "XLK", "MSFT": "XLK", "NVDA": "XLK", "AMD": "XLK", "CRM": "XLK",
+    "AVGO": "XLK", "INTC": "XLK", "CSCO": "XLK", "ADBE": "XLK",
+    "JPM": "XLF", "BAC": "XLF", "GS": "XLF", "WFC": "XLF", "MS": "XLF",
+    "XOM": "XLE", "CVX": "XLE", "COP": "XLE", "SLB": "XLE", "EOG": "XLE",
+    "UNH": "XLV", "JNJ": "XLV", "PFE": "XLV", "ABBV": "XLV", "MRK": "XLV",
+    "AMZN": "XLY", "TSLA": "XLY", "HD": "XLY", "MCD": "XLY", "NKE": "XLY",
+    "CAT": "XLI", "HON": "XLI", "BA": "XLI", "GE": "XLI", "UPS": "XLI",
+    "PG": "XLP", "KO": "XLP", "WMT": "XLP", "COST": "XLP", "PEP": "XLP",
+    "NEE": "XLU", "DUK": "XLU", "SO": "XLU", "D": "XLU", "AEP": "XLU",
+    "AMT": "XLRE", "PLD": "XLRE", "CCI": "XLRE", "SPG": "XLRE", "O": "XLRE",
+    "LIN": "XLB", "APD": "XLB", "SHW": "XLB", "FCX": "XLB", "NEM": "XLB",
+    "META": "XLC", "GOOG": "XLC", "GOOGL": "XLC", "DIS": "XLC", "NFLX": "XLC",
+    "XLK": "XLK", "XLF": "XLF", "XLE": "XLE", "XLV": "XLV", "XLY": "XLY",
+    "XLI": "XLI", "XLP": "XLP", "XLU": "XLU", "XLRE": "XLRE", "XLB": "XLB", "XLC": "XLC",
+    "SPY": "SPY"
+  },
+  "penalty_schedule": {
+    "_description": "Sector-relative confidence penalty for options buying. Penalty is applied when IV rank exceeds the sector-specific 'expensive_rank' threshold. Penalty scales linearly from 0% at threshold to max_penalty at IV rank 100%.",
+    "base_penalty_at_threshold": 0.05,
+    "max_penalty_at_100_rank": 0.25,
+    "trend_adjustments": {
+      "rising": 0.05,
+      "stable": 0.00,
+      "falling": -0.05
+    }
+  }
+}

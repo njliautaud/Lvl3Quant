@@ -1,0 +1,115 @@
+{
+  "name": "Sector ETF Options V8 Production",
+  "version": "8.1",
+  "last_validated": "2026-07-27",
+  "validation_experiments": {
+    "original": "production_v8_candidate_v1 (MLflow exp production_v8_candidate_v1)",
+    "stress_test": "v8_stress_test_v1 (MLflow exp 213)",
+    "real_pricing": "v8_real_pricing_backtest_v1 (MLflow exp 219)",
+    "liquidity": "v8_liquidity_adjusted_v1 (MLflow exp 220)"
+  },
+
+  "strategy": {
+    "type": "sector_etf_options_spread",
+    "universe": ["XLK", "XLF", "XLE", "XLV", "XLY", "XLP", "XLI", "XLB", "XLU", "XLRE", "XLC"],
+    "n_sectors": 11,
+    "top_k_long": 3,
+    "bottom_k_short": 3,
+    "trade_structure": {
+      "bull": "bull_call_spread",
+      "bear": "bear_put_spread"
+    }
+  },
+
+  "parameters": {
+    "dte": 14,
+    "otm_pct": 2.0,
+    "spread_width_pct": 3.0,
+    "rebalance_freq": "W-FRI",
+    "hold_to_expiry": true,
+    "entry_haircut_pct": 15.0,
+    "exit_haircut_pct": 0.0,
+    "commission_rt_spread": 2.60,
+    "max_position_pct": 40.0
+  },
+
+  "regime_rules": {
+    "vix_low_threshold": 20.0,
+    "low_vix_mode": "pairs (bull + bear)",
+    "high_vix_mode": "bull_only",
+    "regime_filter": "GRU score > 0.4 (or VIX proxy if unavailable)"
+  },
+
+  "cost_width_gate": {
+    "enabled": true,
+    "max_cost_width_ratio": 0.50,
+    "rationale": "KB #233: Low-priced sectors (<$30) have entry cost > 88% of spread width. Filter eliminates ~8% of trades, improving chain-only Sharpe from 1.64 to 3.17 (93% improvement). Added 2026-07-27."
+  },
+
+  "ml_model": {
+    "type": "LightGBM",
+    "n_estimators": 100,
+    "max_depth": 4,
+    "learning_rate": 0.05,
+    "subsample": 0.8,
+    "colsample_bytree": 0.8,
+    "min_child_samples": 5,
+    "walk_forward_train_periods": 12,
+    "walk_forward_mode": "sliding"
+  },
+
+  "features": {
+    "count": 17,
+    "feature_set": "v6",
+    "list": [
+      "ret_5d", "ret_10d", "ret_21d", "ret_63d", "ret_126d", "ret_252d",
+      "sharpe_63d", "pct_52w_high", "mom_accel",
+      "pct_pos_months_12m", "sortino_63d", "calmar_1y", "up_capture",
+      "trend_r2_63d", "trend_slope_63d",
+      "sector_spy_beta_63d", "cross_sector_dispersion"
+    ],
+    "top_importance": ["sector_spy_beta_63d", "up_capture", "ret_126d", "ret_10d", "trend_r2_63d"]
+  },
+
+  "performance": {
+    "bs_pricing": {
+      "sharpe": 3.24,
+      "sortino": 27.89,
+      "win_rate": 0.451,
+      "profit_factor": 5.33,
+      "max_dd": -0.080,
+      "gates_passed": "5/5",
+      "final_equity_from_645": 38305,
+      "n_trades": 1338
+    },
+    "real_pricing_with_filter": {
+      "sharpe_overall": 2.53,
+      "sharpe_chain_only_2019_plus": 3.17,
+      "win_rate_chain_only": 0.461,
+      "gates_passed": "5/5",
+      "note": "Real mid-price from Dolt chains + cost/width < 50% filter"
+    },
+    "structural_edge": {
+      "random_mean_sharpe": 2.85,
+      "ml_alpha_ratio": 1.14,
+      "pct_structural": 90,
+      "note": "~90% of edge is structural (pairs + VIX regime + DTE leverage), ~10% from ML"
+    },
+    "monte_carlo_ci_95": [2.39, 3.64],
+    "cost_robust_to": "3x commission"
+  },
+
+  "capital": {
+    "starting": 645,
+    "account": "agentic_options",
+    "broker": "Robinhood (planned)"
+  },
+
+  "notes": [
+    "Removing sectors HURTS: top 6 liquid Sharpe 2.97 vs full 11 Sharpe 3.24 (KB liquidity study)",
+    "Bear side is weak with real pricing — most edge on bull side",
+    "XLK ($200+) and XLY ($110+) are most profitable per-trade due to wider dollar spreads",
+    "XLF is the least profitable despite highest liquidity score — too narrow spreads",
+    "2026 is weaker than historical average (real mid Sharpe 0.50 vs 3.17 overall)"
+  ]
+}
